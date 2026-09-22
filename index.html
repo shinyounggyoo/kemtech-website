@@ -4,6 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>켐텍 (KEMTECH) - Global Advanced Chemical Solutions</title>
+
+    <!-- ============================================================
+         SEO / 공유 미리보기 설정 블록 (SITE IDENTITY BLOCK)
+         이 템플릿을 다른 회사 홈페이지에 재사용할 때는
+         아래 구간(SITE IDENTITY BLOCK ~ END)의 값들만 그 회사 정보로
+         바꾸면 됩니다. 회사명 / 한줄소개 / 대표이미지 / 파비콘 색상.
+         (카카오톡·페이스북 공유 미리보기와 검색엔진은 자바스크립트를
+          실행하지 않고 이 블록의 값을 그대로 읽어가므로, 관리자 페이지가
+          아니라 이 코드에 직접 넣어야 합니다.)
+    ============================================================ -->
+    <meta name="description" content="반도체·2차전지·제약·친환경 에너지 소재용 고순도 정밀 화학물질 전문기업 켐텍(KEMTECH). 20년 기술력과 ISO 9001/14001 인증, 세정제·전해액 첨가제 등 제품 단가표 확인 및 온라인 견적 문의 가능.">
+    <meta name="theme-color" content="#0A5FA0">
+
+    <!-- 오픈그래프(카카오톡, 페이스북 등 링크 공유 미리보기) -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="켐텍 (KEMTECH)">
+    <meta property="og:title" content="켐텍 (KEMTECH) - Global Advanced Chemical Solutions">
+    <meta property="og:description" content="반도체·2차전지·제약·친환경 에너지 소재용 고순도 정밀 화학물질 전문기업 켐텍(KEMTECH). 20년 기술력과 ISO 9001/14001 인증, 세정제·전해액 첨가제 등 제품 단가표 확인 및 온라인 견적 문의 가능.">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1200&q=80">
+    <!-- og:url 은 정식 도메인이 연결된 뒤 실제 주소로 채워주세요. 예) <meta property="og:url" content="https://kemtech.co.kr/"> -->
+
+    <!-- 트위터(X) 카드: 오픈그래프를 그대로 재사용 -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="켐텍 (KEMTECH) - Global Advanced Chemical Solutions">
+    <meta name="twitter:description" content="반도체·2차전지·제약·친환경 에너지 소재용 고순도 정밀 화학물질 전문기업 켐텍(KEMTECH). 20년 기술력과 ISO 9001/14001 인증, 세정제·전해액 첨가제 등 제품 단가표 확인 및 온라인 견적 문의 가능.">
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1200&q=80">
+
+    <!-- 파비콘: 별도 이미지 파일 없이 코드 안에 그려 넣은 아이콘(데이터 URI SVG)입니다.
+         다른 회사용으로 재사용할 때는 fill 색상과 텍스트(K)만 바꾸면 됩니다. -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A5FA0'/%3E%3Ctext x='32' y='44' font-family='Arial, sans-serif' font-size='34' font-weight='800' fill='white' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A5FA0'/%3E%3Ctext x='32' y='44' font-family='Arial, sans-serif' font-size='34' font-weight='800' fill='white' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+    <!-- ============================================================ END: SITE IDENTITY BLOCK ============================================================ -->
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -2104,6 +2137,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                                 <label class="block text-xs font-bold text-slate-700 mb-1">서브 설명 문구</label>
                                 <textarea id="editHomeSub" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-chem-600"></textarea>
                             </div>
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                                <label class="block text-xs font-bold text-slate-800"><i class="fa-solid fa-magnifying-glass text-chem-600 mr-1"></i> 검색엔진 노출 설명 (메타 설명)</label>
+                                <p class="text-[10px] text-slate-500">구글·네이버 검색결과에 사이트 요약으로 노출되는 문구입니다. 80~120자 내외를 권장합니다. (카카오톡 공유 미리보기 문구는 별도이며 개발자에게 요청해 변경합니다.)</p>
+                                <textarea id="editHomeSeoDescription" rows="3" maxlength="160" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-chem-600"></textarea>
+                            </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">메인 배너 자동 전환 간격</label>
                                 <div class="flex items-center gap-2">
@@ -2782,6 +2820,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 badge: "Since 2005 · Global Chemical Partner",
                 title: "첨단 화학 기술과 혁신으로 미래를 창조합니다",
                 sub: "반도체, 제약, 친환경 에너지 소재 분야를 선도하는 고순도 정밀 화학물질 솔루션 제공 기업입니다.",
+                seoDescription: "반도체·2차전지·제약·친환경 에너지 소재용 고순도 정밀 화학물질 전문기업 켐텍(KEMTECH). 20년 기술력과 ISO 9001/14001 인증, 세정제·전해액 첨가제 등 제품 단가표 확인 및 온라인 견적 문의 가능.",
                 logo: "",
                 images: [
                     "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1920&q=80",
@@ -2924,6 +2963,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 if (!appData.inquiryFields) appData.inquiryFields = DEFAULT_DATA.inquiryFields;
                 if (!appData.home) appData.home = DEFAULT_DATA.home;
                 if (typeof appData.home.logo !== "string") appData.home.logo = DEFAULT_DATA.home.logo;
+                if (!appData.home.seoDescription) appData.home.seoDescription = DEFAULT_DATA.home.seoDescription;
                 if (!Number.isFinite(Number(appData.home.sliderInterval))) appData.home.sliderInterval = 5000;
                 if (!appData.about) appData.about = DEFAULT_DATA.about;
                 if (!Array.isArray(appData.about.extraSections)) appData.about.extraSections = [];
@@ -3060,10 +3100,25 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             }, interval);
         }
 
+        // ================= 검색엔진 노출 설명(메타 설명) 실시간 반영 =================
+        // 관리자가 저장한 문구를 <head>의 description / og:description / twitter:description 에 반영합니다.
+        // 값이 비어 있으면 코드에 기본으로 넣어둔 문구(초기 SEO 설정)를 그대로 사용합니다.
+        function applySeoDescription(text) {
+            const finalText = (text && text.trim()) ? text.trim() : DEFAULT_DATA.home.seoDescription;
+            const setMeta = (selector) => {
+                const el = document.querySelector(selector);
+                if (el) el.setAttribute("content", finalText);
+            };
+            setMeta('meta[name="description"]');
+            setMeta('meta[property="og:description"]');
+            setMeta('meta[name="twitter:description"]');
+        }
+
         // ================= 메인 웹사이트 렌더링 =================
         function renderSite() {
             renderGnbNavigation();
             updateAdminGnbLabels();
+            applySeoDescription(appData.home && appData.home.seoDescription);
             // 1. Home Render
             if(document.getElementById("homeBadge")) document.getElementById("homeBadge").textContent = appData.home.badge || '';
             if(document.getElementById("homeTitle")) document.getElementById("homeTitle").textContent = appData.home.title || '';
@@ -4514,6 +4569,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             document.getElementById("editHomeBadge").value = appData.home.badge || "";
             document.getElementById("editHomeTitle").value = appData.home.title || "";
             document.getElementById("editHomeSub").value = appData.home.sub || "";
+            document.getElementById("editHomeSeoDescription").value = appData.home.seoDescription || "";
             document.getElementById("editHomeSliderInterval").value = Math.round((Number(appData.home.sliderInterval) || 5000) / 1000);
             const logoPreviewWrap = document.getElementById("homeLogoPreviewWrap");
             const logoPreview = document.getElementById("homeLogoPreview");
@@ -4532,6 +4588,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             appData.home.badge = document.getElementById("editHomeBadge").value;
             appData.home.title = document.getElementById("editHomeTitle").value;
             appData.home.sub = document.getElementById("editHomeSub").value;
+            appData.home.seoDescription = document.getElementById("editHomeSeoDescription").value;
+            applySeoDescription(appData.home.seoDescription);
             const sliderSeconds = Math.min(30, Math.max(3, Number(document.getElementById("editHomeSliderInterval").value) || 5));
             appData.home.sliderInterval = sliderSeconds * 1000;
             appData.home.images = getHomeImageSettings();
@@ -6331,7 +6389,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
                 html = `
                     <div class="relative bg-slate-900 text-white p-6 sm:p-10 rounded-xl overflow-hidden">
-                        <img src="${bgImg}" class="absolute inset-0 w-full h-full object-cover opacity-30">
+                        <img src="${bgImg}" alt="" class="absolute inset-0 w-full h-full object-cover opacity-30">
                         <div class="relative z-10 space-y-3">
                             <span class="bg-chem-600 text-white text-[10px] font-bold px-2.5 py-1 rounded inline-block">${b}</span>
                             <h2 class="text-xl sm:text-3xl font-extrabold">${t}</h2>
@@ -6388,7 +6446,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 html = `
                     <div class="max-w-sm mx-auto bg-white border border-slate-200 rounded-xl overflow-hidden shadow-md p-4 space-y-3">
                         <div class="h-36 bg-slate-100 rounded-lg overflow-hidden relative">
-                            <img src="${firstImg}" class="w-full h-full object-cover">
+                            <img src="${firstImg}" alt="" class="w-full h-full object-cover">
                             <span class="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] px-2 py-0.5 rounded font-bold">${cat || '분류 미입력'}</span>
                         </div>
                         <h4 class="font-bold text-slate-900 text-base">${title || '제품명 미입력'}</h4>
@@ -6424,7 +6482,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 html = `
                     <div class="max-w-md mx-auto bg-white border border-slate-200 rounded-xl overflow-hidden shadow-md">
                         <div class="h-40 bg-slate-100 relative">
-                            <img src="${firstImg}" class="w-full h-full object-cover">
+                            <img src="${firstImg}" alt="" class="w-full h-full object-cover">
                             <span class="absolute top-3 left-3 bg-chem-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">${tag || 'TAG'}</span>
                         </div>
                         <div class="p-4 space-y-2">
@@ -7449,7 +7507,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     var bg = pub.length ? pub[0].url : SITE_IMAGE_FALLBACK;
     var html = '<div id="kemtechHomePreviewRoot">' +
       '<div class="relative bg-slate-900 text-white p-6 sm:p-10 rounded-xl overflow-hidden">' +
-        '<img src="' + esc(bg) + '" class="absolute inset-0 w-full h-full object-cover opacity-30">' +
+        '<img src="' + esc(bg) + '" alt="" class="absolute inset-0 w-full h-full object-cover opacity-30">' +
         '<div class="relative z-10 space-y-3">' +
           '<span class="bg-chem-600 text-white text-[10px] font-bold px-2.5 py-1 rounded inline-block">' + esc(val("editHomeBadge")) + '</span>' +
           '<h2 class="text-xl sm:text-3xl font-extrabold">' + esc(val("editHomeTitle")) + '</h2>' +
