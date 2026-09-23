@@ -3239,15 +3239,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                     const firstImg = (prod.images && prod.images.length > 0) ? prod.images[0] : SITE_IMAGE_FALLBACK;
                     
                     const t1Price = prod.pricing && prod.pricing.t1 ? prod.pricing.t1.price : '-';
-                    const t1Range = prod.pricing && prod.pricing.t1 ? prod.pricing.t1.range : '-';
+                    const t1Range = prod.pricing && prod.pricing.t1 ? formatQtyThousands(prod.pricing.t1.range) : '-';
                     const t1Unit = prod.pricing && prod.pricing.t1 ? (prod.pricing.t1.unit || '개') : '개';
                     const t1Currency = prod.pricing && prod.pricing.t1 ? (prod.pricing.t1.currency || '원') : '원';
                     const t2Price = prod.pricing && prod.pricing.t2 ? prod.pricing.t2.price : '-';
-                    const t2Range = prod.pricing && prod.pricing.t2 ? prod.pricing.t2.range : '-';
+                    const t2Range = prod.pricing && prod.pricing.t2 ? formatQtyThousands(prod.pricing.t2.range) : '-';
                     const t2Unit = prod.pricing && prod.pricing.t2 ? (prod.pricing.t2.unit || '개') : '개';
                     const t2Currency = prod.pricing && prod.pricing.t2 ? (prod.pricing.t2.currency || '원') : '원';
                     const t3Price = prod.pricing && prod.pricing.t3 ? prod.pricing.t3.price : '-';
-                    const t3Range = prod.pricing && prod.pricing.t3 ? prod.pricing.t3.range : '-';
+                    const t3Range = prod.pricing && prod.pricing.t3 ? formatQtyThousands(prod.pricing.t3.range) : '-';
                     const t3Unit = prod.pricing && prod.pricing.t3 ? (prod.pricing.t3.unit || '개') : '개';
                     const t3Currency = prod.pricing && prod.pricing.t3 ? (prod.pricing.t3.currency || '원') : '원';
 
@@ -3574,11 +3574,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 detailImagesEl.querySelectorAll("img").forEach(applyImageFallback);
             }
 
-            document.getElementById("prodModalRange1").textContent = `소량 (${prod.pricing.t1.range} ${prod.pricing.t1.unit || "개"})`;
+            document.getElementById("prodModalRange1").textContent = `소량 (${formatQtyThousands(prod.pricing.t1.range)} ${prod.pricing.t1.unit || "개"})`;
             document.getElementById("prodModalPrice1").textContent = `${prod.pricing.t1.price} ${prod.pricing.t1.currency || "원"}`;
-            document.getElementById("prodModalRange2").textContent = `중량 (${prod.pricing.t2.range} ${prod.pricing.t2.unit || "개"})`;
+            document.getElementById("prodModalRange2").textContent = `중량 (${formatQtyThousands(prod.pricing.t2.range)} ${prod.pricing.t2.unit || "개"})`;
             document.getElementById("prodModalPrice2").textContent = `${prod.pricing.t2.price} ${prod.pricing.t2.currency || "원"}`;
-            document.getElementById("prodModalRange3").textContent = `대량 (${prod.pricing.t3.range} ${prod.pricing.t3.unit || "개"})`;
+            document.getElementById("prodModalRange3").textContent = `대량 (${formatQtyThousands(prod.pricing.t3.range)} ${prod.pricing.t3.unit || "개"})`;
             document.getElementById("prodModalPrice3").textContent = `${prod.pricing.t3.price} ${prod.pricing.t3.currency || "원"}`;
 
             const imgs = prod.images || [];
@@ -4303,6 +4303,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             }
             syncAdminMenuContext(tabId);
             updateAdminInquiryNewBadge();
+            // Footer 항목관리 / Footer 정보편집 탭을 벗어날 때, 저장 여부와 무관하게 현재 입력된 내용을 appData에 즉시 반영해
+            // 두 화면이 서로 실시간으로 동기화되도록 처리 (저장 버튼을 누르지 않아도 상대 탭에서 최신 내용이 보이도록 함)
+            const footerItemsTabEl = document.getElementById('footerItemsTab');
+            const footerInfoTabEl = document.getElementById('footerTab');
+            if (footerItemsTabEl && !footerItemsTabEl.classList.contains('hidden')) collectFooterItemsAdmin();
+            if (footerInfoTabEl && !footerInfoTabEl.classList.contains('hidden')) applyFooterInfoValues(collectFooterInfoAdmin());
             const tabs = ['homeTab', 'aboutTab', 'productTab', 'facilityTab', 'inquiryFormTab', 'inquiryManageTab', 'footerItemsTab', 'footerTab', 'memberTab', 'historyTab', 'loginHistoryTab', 'gnbTab', 'colorTab'];
             tabs.forEach(t => {
                 const el = document.getElementById(t);
@@ -5026,6 +5032,27 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             const suffix = raw.slice(match.index + numberText.length).trim();
             return formatted + (suffix ? " " + suffix : "");
         }
+        // 수량(From/To, 구간 텍스트) 표시용: 문자열 안의 숫자만 찾아 천단위 콤마를 붙임 (원본 데이터/단위 텍스트는 그대로 유지)
+        function formatQtyThousands(value) {
+            if (value === undefined || value === null || value === "") return value;
+            const str = String(value);
+            return str.replace(/-?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?/g, (numStr) => {
+                const normalized = numStr.replace(/,/g, "");
+                const numberValue = Number(normalized);
+                return Number.isFinite(numberValue) ? numberValue.toLocaleString("en-US", { maximumFractionDigits: 6 }) : numStr;
+            });
+        }
+        // 수량 입력값도 1,000 단위로 즉시 표시하되 저장되는 값의 숫자 의미는 그대로 유지
+        function formatQtyInputValue(value) {
+            if (value === undefined || value === null || value === "") return "";
+            const raw = String(value).replace(/,/g, "");
+            const match = raw.match(/-?\d+(?:\.\d+)?/);
+            if (!match) return value;
+            const numberText = match[0];
+            const formatted = Number(numberText).toLocaleString("en-US", { maximumFractionDigits: 6 });
+            const suffix = raw.slice(match.index + numberText.length).trim();
+            return formatted + (suffix ? " " + suffix : "");
+        }
         function inferProductUnit(range) {
             const text = String(range || "");
             const units = ["mL","kg","mm","CM","EA","톤","개","g","L","M","식","세트","Drum"];
@@ -5073,6 +5100,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                     el.addEventListener("input", () => {
                         const pos = el.selectionStart;
                         const next = formatPriceInputValue(el.value);
+                        if (next !== el.value) { el.value = next; try { el.setSelectionRange(pos, pos); } catch(e) {} }
+                    });
+                }
+            });
+            ["rangeT1From","rangeT1To","rangeT2From","rangeT2To","rangeT3From","rangeT3To"].forEach(id => {
+                const el = document.getElementById(id);
+                if (el && !el.dataset.qtyFormatBound) {
+                    el.dataset.qtyFormatBound = "1";
+                    el.addEventListener("blur", () => { el.value = formatQtyInputValue(el.value); });
+                    el.addEventListener("input", () => {
+                        const pos = el.selectionStart;
+                        const next = formatQtyInputValue(el.value);
                         if (next !== el.value) { el.value = next; try { el.setSelectionRange(pos, pos); } catch(e) {} }
                     });
                 }
@@ -5191,8 +5230,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 const tiers = [p.pricing?.t1, p.pricing?.t2, p.pricing?.t3];
                 const tierCells = tiers.map(t => {
                     const range = getRangeParts(t);
-                    return `<td class="p-2 text-[10px] text-slate-600 admin-prod-cell">${safeCell(range.from)}</td>
-                            <td class="p-2 text-[10px] text-slate-600 admin-prod-cell">${safeCell(range.to)}</td>
+                    return `<td class="p-2 text-[10px] text-slate-600 admin-prod-cell">${safeCell(formatQtyThousands(range.from))}</td>
+                            <td class="p-2 text-[10px] text-slate-600 admin-prod-cell">${safeCell(formatQtyThousands(range.to))}</td>
                             <td class="p-2 text-[10px] text-slate-600 admin-prod-cell">${safeCell(t?.unit || '개')}</td>
                             <td class="p-2 text-[10px] text-slate-600 admin-prod-cell">${safeCell(t?.price)}</td>
                             <td class="p-2 text-[10px] text-slate-600 admin-prod-cell">${safeCell(t?.currency || '원')}</td>`;
@@ -6587,9 +6626,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 const p1 = document.getElementById("priceT1").value;
                 const p2 = document.getElementById("priceT2").value;
                 const p3 = document.getElementById("priceT3").value;
-                const r1 = getRangeValue(1);
-                const r2 = getRangeValue(2);
-                const r3 = getRangeValue(3);
+                const u1 = document.getElementById("unitT1").value;
+                const u2 = document.getElementById("unitT2").value;
+                const u3 = document.getElementById("unitT3").value;
+                const c1 = document.getElementById("currencyT1").value;
+                const c2 = document.getElementById("currencyT2").value;
+                const c3 = document.getElementById("currencyT3").value;
+                const r1 = formatQtyThousands(getRangeValue(1));
+                const r2 = formatQtyThousands(getRangeValue(2));
+                const r3 = formatQtyThousands(getRangeValue(3));
                 const imgs = getMultiImgValues("productImgContainer");
                 const firstImg = imgs.length > 0 ? imgs[0] : SITE_IMAGE_FALLBACK;
 
@@ -6602,9 +6647,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                         <h4 class="font-bold text-slate-900 text-base">${title || '제품명 미입력'}</h4>
                         <p class="text-xs text-slate-600">${desc}</p>
                         <div class="bg-sky-50 p-2.5 rounded-lg text-xs space-y-1">
-                            <div class="flex justify-between"><span>소량 (${r1})</span><span class="font-bold">${p1}</span></div>
-                            <div class="flex justify-between"><span>중량 (${r2})</span><span class="font-bold">${p2}</span></div>
-                            <div class="flex justify-between text-chem-600 font-bold"><span>대량 (${r3})</span><span>${p3}</span></div>
+                            <div class="flex justify-between"><span>소량 (${r1} ${u1})</span><span class="font-bold">${p1} ${c1}</span></div>
+                            <div class="flex justify-between"><span>중량 (${r2} ${u2})</span><span class="font-bold">${p2} ${c2}</span></div>
+                            <div class="flex justify-between text-chem-600 font-bold"><span>대량 (${r3} ${u3})</span><span>${p3} ${c3}</span></div>
                         </div>
                         ${buildPreviewImageGallery(imgs, "제품 이미지")}
                     </div>
@@ -6662,7 +6707,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 const desc = footerValues.fi_brandDesc || "";
                 const icon = footerValues.fi_brandIcon || "🧪";
                 const copy = footerValues.fi_copyright || "";
-                const footerItemsPreview = (appData.footerItems || []).filter(it => it.visible !== false).map(it => `<div><span class="text-white font-bold mb-1 flex items-center gap-1.5">${footerIconMarkup(it.icon, "w-4 h-4")}<span>${it.label || ""}</span></span><p>${String(it.value || "").replace(/\n/g,"<br>")}</p></div>`).join("");
+                const footerItemsPreview = (appData.footerItems || []).filter(it => it.visible !== false).map(it => {
+                    const liveValue = Object.prototype.hasOwnProperty.call(footerValues, it.id) ? footerValues[it.id] : (it.value || "");
+                    return `<div><span class="text-white font-bold mb-1 flex items-center gap-1.5">${footerIconMarkup(it.icon, "w-4 h-4")}<span>${it.label || ""}</span></span><p>${String(liveValue || "").replace(/\n/g,"<br>")}</p></div>`;
+                }).join("");
                 html = `
                     <div class="bg-slate-950 text-slate-400 p-6 rounded-xl text-xs space-y-4">
                         ${buildFooterBrandPreviewHtml(icon, name, desc)}
@@ -7469,6 +7517,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   function tierLabel(t){
     if(!t) return {range:'-',unit:'개',currency:'원',price:'-'};
     var range=t.range || ((t.from!==undefined||t.to!==undefined)?((t.from??'-')+' ~ '+(t.to??'-')):'-');
+    if(range && typeof formatQtyThousands==='function') range=formatQtyThousands(range);
     return {range:range||'-',unit:t.unit||'개',currency:t.currency||'원',price:t.price||'-'};
   }
   function updatePublicProductPricing(){
@@ -7755,5 +7804,525 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     window.renderSite = wrappedRender;
     try { syncHomeGalleryFromHomeImages(); } catch(e) {}
   }
+})();
+</script>
+
+
+<!-- KEMTECH: 제품별 수량 단계 관리 - 기존 제품소개 테이블 형식 유지 -->
+<script id="kemtech-product-tier-restore-script">
+(function(){
+    "use strict";
+
+    const UNIT_OPTIONS = ['개','톤','kg','g','L','mL','CM','M','mm','EA','식','세트','Drum','Can','기타'];
+    const CURRENCY_OPTIONS = ['원','US$','CNY','EUR','JPY'];
+    const DEFAULT_TIER_NAMES = ['소량','중량','대량','4단계'];
+
+    function esc(v){
+        return String(v == null ? '' : v)
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+    function formatQty(v){
+        return typeof formatQtyThousands === 'function' ? formatQtyThousands(v) : String(v == null ? '' : v);
+    }
+    function formatPrice(v){
+        return typeof formatPriceInputValue === 'function' ? formatPriceInputValue(v) : String(v == null ? '' : v);
+    }
+    function buildRange(t){
+        if(!t) return '';
+        const from = String(t.from || '').replace(/,/g,'').trim();
+        const to = String(t.to || '').replace(/,/g,'').trim();
+        if(from && to) return `${from} ~ ${to}`;
+        if(from) return `${from} 이상`;
+        if(to) return `~ ${to}`;
+        return '';
+    }
+    // (신규) 홈페이지 제품 카드, 상세보기 팝업, 관리자 "미리보기" 팝업에서 공통으로 쓰는 수량 구간 표시 포맷:
+    // - From/To 모두 있는 경우: "1개 ~ 10 개" (기존 "1 ~ 10 개"에서 From 값에 단위를 붙임)
+    // - To 값이 없는 경우(예: 80,000 이상): "80,000개이상" (기존 "80,000 이상 개"를 공백 없이 붙여서 표기)
+    // 관리자 목록표 등 그 외 화면의 표시 방식은 건드리지 않음
+    function formatTierRangeDisplayForPreview(t){
+        if(!t) return '';
+        const unit = t.unit || '개';
+        const from = String(t.from || '').replace(/,/g,'').trim();
+        const to = String(t.to || '').replace(/,/g,'').trim();
+        const fFrom = from ? formatQty(from) : '';
+        const fTo = to ? formatQty(to) : '';
+        if(fFrom && fTo) return `${fFrom}${unit} ~ ${fTo} ${unit}`;
+        if(fFrom) return `${fFrom}${unit}이상`;
+        if(fTo) return `~ ${fTo}${unit}`;
+        return '';
+    }
+    function tierFromLegacy(t, i){
+        t = t || {};
+        let range = String(t.range || '').trim();
+        let from = t.from != null ? String(t.from) : '';
+        let to = t.to != null ? String(t.to) : '';
+        if(!from && !to && range){
+            const parts = range.split(/\s*~\s*/);
+            if(parts.length > 1){
+                from = parts[0].replace(/,/g,'').trim();
+                to = parts[1].replace(/개\s*이상|이상/g,'').replace(/,/g,'').trim();
+            }else if(/이상/.test(range)){
+                from = range.replace(/이상/g,'').replace(/개/g,'').replace(/,/g,'').trim();
+            }else{
+                from = range.replace(/개/g,'').replace(/,/g,'').trim();
+            }
+        }
+        return {
+            name: t.name || DEFAULT_TIER_NAMES[i] || `단계 ${i+1}`,
+            from: from.replace(/,/g,''),
+            to: to.replace(/,/g,''),
+            unit: t.unit || (typeof inferProductUnit === 'function' ? inferProductUnit(range) : '개') || '개',
+            currency: t.currency || '원',
+            price: t.price || ''
+        };
+    }
+    function getProductTiers(product){
+        if(!product) return [];
+        if(product.pricing && Array.isArray(product.pricing.tiers) && product.pricing.tiers.length){
+            return product.pricing.tiers.map((t,i)=>tierFromLegacy(t,i));
+        }
+        return ['t1','t2','t3']
+            .map(k => product.pricing && product.pricing[k])
+            .filter(Boolean)
+            .map((t,i)=>tierFromLegacy(t,i));
+    }
+    function makeTier(t,i){
+        const x = tierFromLegacy(t || {}, i);
+        return {name:x.name || `단계 ${i+1}`, from:x.from || '', to:x.to || '', unit:x.unit || '개', currency:x.currency || '원', price:x.price || ''};
+    }
+    function readTierEditor(){
+        const wrap = document.getElementById('productTierEditorGrid');
+        if(!wrap) return [];
+        return Array.from(wrap.querySelectorAll('[data-product-tier]')).map(card=>{
+            const get = key => {
+                const el = card.querySelector(`[data-tier-field="${key}"]`);
+                return el ? String(el.value || '').trim() : '';
+            };
+            const t = {
+                name:get('name'),
+                from:get('from').replace(/,/g,''),
+                to:get('to').replace(/,/g,''),
+                unit:get('unit') || '개',
+                currency:get('currency') || '원',
+                price:formatPrice(get('price'))
+            };
+            t.range = buildRange(t);
+            return t;
+        });
+    }
+    function syncPricing(tiers){
+        const pricing = { tiers: tiers.map(t=>({
+            name:t.name, range:buildRange(t), from:t.from, to:t.to,
+            unit:t.unit, currency:t.currency, price:formatPrice(t.price)
+        })) };
+        for(let i=0;i<4;i++){
+            const t = tiers[i];
+            pricing[`t${i+1}`] = t ? {
+                name:t.name, range:buildRange(t), from:t.from, to:t.to,
+                unit:t.unit, currency:t.currency, price:formatPrice(t.price)
+            } : null;
+        }
+        return pricing;
+    }
+
+    function bindTierInputs(){
+        const wrap = document.getElementById('productTierEditorGrid');
+        if(!wrap) return;
+        wrap.querySelectorAll('[data-tier-delete]').forEach(btn=>{
+            btn.onclick = function(){
+                const cards = wrap.querySelectorAll('[data-product-tier]');
+                if(cards.length <= 1){ alert('제품에는 최소 1개의 수량 단계가 필요합니다.'); return; }
+                const card = btn.closest('[data-product-tier]');
+                if(card) card.remove();
+                renumberTierCards();
+            };
+        });
+        wrap.querySelectorAll('[data-tier-field="from"],[data-tier-field="to"]').forEach(el=>{
+            el.addEventListener('input',function(){
+                const pos = el.selectionStart;
+                const next = typeof formatQtyInputValue === 'function' ? formatQtyInputValue(el.value) : el.value;
+                if(next !== el.value){ el.value = next; try{el.setSelectionRange(pos,pos);}catch(e){} }
+            });
+            el.addEventListener('blur',function(){
+                if(typeof formatQtyInputValue === 'function') el.value = formatQtyInputValue(el.value);
+            });
+        });
+        wrap.querySelectorAll('[data-tier-field="price"]').forEach(el=>{
+            el.addEventListener('input',function(){
+                const pos = el.selectionStart;
+                const next = formatPrice(el.value);
+                if(next !== el.value){ el.value = next; try{el.setSelectionRange(pos,pos);}catch(e){} }
+            });
+            el.addEventListener('blur',function(){ el.value = formatPrice(el.value); });
+        });
+
+        // 수량 단위/단가 통화는 어느 단계에서 변경해도 모든 단계에 동일하게 적용
+        wrap.querySelectorAll('[data-tier-field="unit"]').forEach(el=>{
+            el.addEventListener('change',function(){
+                const value = el.value || '개';
+                wrap.querySelectorAll('[data-tier-field="unit"]').forEach(other=>{ other.value = value; });
+            });
+        });
+        wrap.querySelectorAll('[data-tier-field="currency"]').forEach(el=>{
+            el.addEventListener('change',function(){
+                const value = el.value || '원';
+                wrap.querySelectorAll('[data-tier-field="currency"]').forEach(other=>{ other.value = value; });
+            });
+        });
+
+        // 신규/기존 제품 수정 화면에서 단계별 값이 달라져 있어도 첫 단계 기준으로 통일
+        const firstUnit = wrap.querySelector('[data-tier-field="unit"]');
+        const firstCurrency = wrap.querySelector('[data-tier-field="currency"]');
+        if(firstUnit){
+            const value = firstUnit.value || '개';
+            wrap.querySelectorAll('[data-tier-field="unit"]').forEach(other=>{ other.value = value; });
+        }
+        if(firstCurrency){
+            const value = firstCurrency.value || '원';
+            wrap.querySelectorAll('[data-tier-field="currency"]').forEach(other=>{ other.value = value; });
+        }
+    }
+    function renumberTierCards(){
+        const wrap = document.getElementById('productTierEditorGrid');
+        if(!wrap) return;
+        wrap.querySelectorAll('[data-product-tier]').forEach((card,i)=>{
+            const n = card.querySelector('.tier-index-label');
+            if(n) n.textContent = `단계 ${i+1}`;
+        });
+    }
+    function renderTierEditor(tiers){
+        const wrap = document.getElementById('productTierEditorGrid');
+        if(!wrap) return;
+        tiers = Array.isArray(tiers) && tiers.length ? tiers.map(makeTier) : DEFAULT_TIER_NAMES.map((n,i)=>makeTier({name:n},i));
+        wrap.innerHTML = tiers.map((t,i)=>{
+            const units = UNIT_OPTIONS.map(u=>`<option value="${esc(u)}" ${u===t.unit?'selected':''}>${esc(u)}</option>`).join('');
+            const currencies = CURRENCY_OPTIONS.map(c=>`<option value="${esc(c)}" ${c===t.currency?'selected':''}>${esc(c)}</option>`).join('');
+            return `
+                <div class="bg-white p-3 rounded-lg border border-sky-200 space-y-2" data-product-tier="1">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="tier-index-label block text-[11px] font-bold text-chem-600">단계 ${i+1}</span>
+                        <button type="button" data-tier-delete="1" class="text-red-500 hover:text-red-700 text-[10px] font-bold whitespace-nowrap"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-[10px] font-bold text-slate-600">단계 이름</label>
+                        <input type="text" data-tier-field="name" value="${esc(t.name)}" placeholder="예: 소량" class="w-full min-w-0 border rounded px-2 py-1.5 text-xs font-bold text-chem-900">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-[10px] font-bold text-slate-600">수량 범위</label>
+                        <div class="grid grid-cols-[1fr_1fr_auto] gap-1 items-center">
+                            <input type="text" data-tier-field="from" value="${esc(formatQty(t.from))}" placeholder="From" class="w-full min-w-0 border rounded px-2 py-1.5 text-xs">
+                            <input type="text" data-tier-field="to" value="${esc(formatQty(t.to))}" placeholder="To" class="w-full min-w-0 border rounded px-2 py-1.5 text-xs">
+                            <select data-tier-field="unit" class="w-[72px] border rounded px-1 py-1.5 text-xs bg-white" aria-label="수량 단위">${units}</select>
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-[10px] font-bold text-slate-600">단가</label>
+                        <div class="grid grid-cols-[1fr_auto] gap-1 items-center">
+                            <input type="text" data-tier-field="price" value="${esc(formatPrice(t.price))}" placeholder="예: 120,000" class="w-full min-w-0 border rounded px-2 py-1.5 text-xs font-bold text-slate-800">
+                            <select data-tier-field="currency" class="w-[72px] border rounded px-1 py-1.5 text-xs bg-white" aria-label="단가 통화">${currencies}</select>
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+        bindTierInputs();
+    }
+    function initTierEditor(){
+        if(document.getElementById('productTierEditorGrid')) return;
+        const oldGrid = document.querySelector('#productTab .grid.grid-cols-1.md\\:grid-cols-3.gap-3');
+        if(!oldGrid) return;
+        const host = document.createElement('div');
+        host.className = 'space-y-2';
+        host.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-[10px] text-slate-500">제품별로 수량 단계의 개수와 단계 이름을 각각 설정할 수 있습니다.</span>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" id="addProductTierBtn" class="shrink-0 bg-chem-600 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold hover:bg-chem-accent"><i class="fa-solid fa-plus mr-1"></i>단계 추가</button>
+                    <button type="button" id="applyProductTierBtn" class="shrink-0 bg-slate-700 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold hover:bg-slate-800"><i class="fa-solid fa-check mr-1"></i>적용하기</button>
+                </div>
+            </div>
+            <div id="productTierEditorGrid" class="grid grid-cols-1 md:grid-cols-4 gap-3"></div>`;
+        oldGrid.parentNode.replaceChild(host,oldGrid);
+        document.getElementById('addProductTierBtn').onclick = function(){
+            const tiers = readTierEditor();
+            tiers.push(makeTier({name:`단계 ${tiers.length+1}`},tiers.length));
+            renderTierEditor(tiers);
+        };
+        document.getElementById('applyProductTierBtn').onclick = function(){
+            const tiers = readTierEditor();
+            if(!tiers.length){ alert('수량 단계는 최소 1개 이상 필요합니다.'); return; }
+            if(!confirm('변경한 수량 단계 설정을 적용하시겠습니까?')) return;
+            tiers.forEach((t,i)=>{ if(!t.name) t.name = `단계 ${i+1}`; t.range = buildRange(t); });
+            renderTierEditor(tiers);
+            const idx = parseInt(document.getElementById('editProductIndex').value,10);
+            if(idx >= 0 && appData.products && appData.products[idx]){
+                appData.products[idx].pricing = syncPricing(tiers);
+                saveData();
+                renderAdminProductTable();
+            }
+        };
+        renderTierEditor(DEFAULT_TIER_NAMES.map((name,i)=>makeTier({name},i)));
+    }
+
+    // 기존 제품 등록/수정/삭제 함수의 화면 형식은 유지하고, 수량 단계 데이터만 동적으로 확장
+    window.saveProductItem = function(skipConfirm=false){
+        if(!skipConfirm && !confirm('제품 정보를 등록/수정하시겠습니까?')) return;
+        const idx = parseInt(document.getElementById('editProductIndex').value,10);
+        const tiers = readTierEditor();
+        if(!tiers.length){ alert('수량 단계는 최소 1개 이상 필요합니다.'); return; }
+        tiers.forEach((t,i)=>{ if(!t.name) t.name = `단계 ${i+1}`; t.range = buildRange(t); });
+        const item = {
+            category: document.getElementById('newProdCategory').value,
+            title: document.getElementById('newProdTitle').value,
+            desc: document.getElementById('newProdDesc').value,
+            detail: document.getElementById('newProdDetail').value,
+            detailImages: getMultiImgValues('productDetailImgContainer'),
+            pricing: syncPricing(tiers),
+            images: getMultiImgValues('productImgContainer')
+        };
+        if(!item.category || !item.title){ alert('제품 분류와 제품명은 필수 입력입니다.'); return; }
+        if(idx >= 0) appData.products[idx] = item;
+        else { if(!appData.products) appData.products=[]; appData.products.push(item); }
+        saveData();
+        resetProductForm();
+        renderAdminProductTable();
+        alert('제품 정보가 성공적으로 저장되었습니다.');
+    };
+
+    window.resetProductForm = function(){
+        document.getElementById('editProductIndex').value = '-1';
+        document.getElementById('productFormTitle').innerHTML = '<i class="fa-solid fa-plus-circle text-chem-600 mr-1"></i> 새 제품 및 수량별 단가 등록';
+        document.getElementById('cancelEditWrap').classList.add('hidden');
+        document.getElementById('productSubmitBtn').textContent = '제품 저장하기';
+        document.getElementById('newProdCategory').value = '';
+        document.getElementById('newProdTitle').value = '';
+        document.getElementById('newProdDesc').value = '';
+        document.getElementById('newProdDetail').value = '';
+        setMultiImgValues('productDetailImgContainer', []);
+        setMultiImgValues('productImgContainer', []);
+        renderTierEditor(DEFAULT_TIER_NAMES.map((name,i)=>makeTier({name},i)));
+        if(typeof bindProductPriceFormatting === 'function') bindProductPriceFormatting();
+    };
+
+    window.editProductItem = function(idx){
+        const p = appData.products && appData.products[idx];
+        if(!p) return;
+        document.getElementById('editProductIndex').value = idx;
+        document.getElementById('productFormTitle').innerHTML = `<i class="fa-solid fa-pen-to-square text-chem-600 mr-1"></i> 제품 정보 수정 (ID: ${idx})`;
+        document.getElementById('cancelEditWrap').classList.remove('hidden');
+        document.getElementById('productSubmitBtn').textContent = '수정 내용 등록';
+        document.getElementById('newProdCategory').value = p.category || '';
+        document.getElementById('newProdTitle').value = p.title || '';
+        document.getElementById('newProdDesc').value = p.desc || '';
+        document.getElementById('newProdDetail').value = p.detail || '';
+        setMultiImgValues('productDetailImgContainer', p.detailImages || []);
+        setMultiImgValues('productImgContainer', p.images || []);
+        renderTierEditor(getProductTiers(p));
+        if(typeof bindProductPriceFormatting === 'function') bindProductPriceFormatting();
+    };
+
+    window.deleteProductItem = function(idx){
+        if(confirm('해당 제품을 정말 삭제하시겠습니까?')){
+            appData.products.splice(idx,1);
+            saveData();
+            renderAdminProductTable();
+        }
+    };
+
+    function renderTableHead(table, maxTiers){
+        const colgroup = table.querySelector('colgroup');
+        if(colgroup){
+            let cols = '<col style="width:44px"><col style="width:92px"><col style="width:170px">';
+            for(let i=0;i<maxTiers;i++){
+                cols += '<col style="width:76px"><col style="width:76px"><col style="width:64px"><col style="width:94px"><col style="width:88px">';
+            }
+            cols += '<col style="width:76px"><col style="width:124px">';
+            colgroup.innerHTML = cols;
+        }
+        const thead = table.querySelector('thead');
+        if(thead){
+            let top = '<tr><th class="p-3" rowspan="2">No</th><th class="p-3" rowspan="2">분류</th><th class="p-3" rowspan="2">제품명</th>';
+            for(let i=0;i<maxTiers;i++) top += `<th class="p-3" colspan="5">수량 ${i+1}단계</th>`;
+            top += '<th class="p-3" rowspan="2">이미지 수</th><th class="p-3 text-center" rowspan="2">관리</th></tr>';
+            let sub = '<tr>';
+            for(let i=0;i<maxTiers;i++) sub += '<th class="p-3">From</th><th class="p-3">To</th><th class="p-3">단위</th><th class="p-3">단가</th><th class="p-3">단가통화</th>';
+            sub += '</tr>';
+            thead.innerHTML = top + sub;
+        }
+    }
+
+    window.renderAdminProductTable = function(){
+        const table = document.querySelector('#productTab .admin-product-table');
+        const tbody = document.getElementById('adminProductTableBody');
+        if(!table || !tbody) return;
+        const products = appData.products || [];
+        let maxTiers = products.reduce((m,p)=>Math.max(m,getProductTiers(p).length),0);
+        if(maxTiers < 1) maxTiers = 1;
+        table.classList.remove('kemtech-dynamic-product-table');
+        renderTableHead(table,maxTiers);
+        tbody.innerHTML = '';
+        products.forEach((p,idx)=>{
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-50';
+            const tiers = getProductTiers(p);
+            let tierCells = '';
+            for(let i=0;i<maxTiers;i++){
+                const t = tiers[i];
+                if(t){
+                    const range = buildRange(t).split(/\s*~\s*/);
+                    const from = range[0] || '';
+                    const to = range.length > 1 ? range.slice(1).join(' ~ ') : '';
+                    tierCells += `<td class="p-2 text-[10px] text-slate-600 admin-prod-cell" title="${esc(t.name)}">${esc(formatQty(from))}</td>`;
+                    tierCells += `<td class="p-2 text-[10px] text-slate-600 admin-prod-cell" title="${esc(t.name)}">${esc(formatQty(to))}</td>`;
+                    tierCells += `<td class="p-2 text-[10px] text-slate-600 admin-prod-cell" title="${esc(t.name)}">${esc(t.unit || '개')}</td>`;
+                    tierCells += `<td class="p-2 text-[10px] text-slate-600 admin-prod-cell" title="${esc(t.name)}">${esc(t.price || '-')}</td>`;
+                    tierCells += `<td class="p-2 text-[10px] text-slate-600 admin-prod-cell" title="${esc(t.name)}">${esc(t.currency || '원')}</td>`;
+                }else{
+                    tierCells += '<td class="p-2 text-[10px] text-slate-300 admin-prod-cell">-</td>'.repeat(5);
+                }
+            }
+            tr.innerHTML = `
+                <td class="p-2 text-center text-slate-600 admin-prod-cell">${idx+1}</td>
+                <td class="p-2 font-bold text-chem-900 admin-prod-cell">${esc(p.category || '-')}</td>
+                <td class="p-2 font-bold text-chem-900 admin-prod-cell">${(p.title || '-').includes(' (') ? esc(p.title).replace(/ \(/,'<br>(') : esc(p.title || '-')}</td>
+                ${tierCells}
+                <td class="p-2 text-slate-500 text-center admin-prod-cell">${(p.images || []).length}개</td>
+                <td class="p-2 text-center product-manage-actions">
+                    <button onclick="editProductItem(${idx})" class="bg-slate-700 text-white px-2.5 py-1 rounded text-[11px] font-bold hover:bg-slate-800">수정</button>
+                    <button onclick="deleteProductItem(${idx})" class="bg-red-500 text-white px-2.5 py-1 rounded text-[11px] font-bold hover:bg-red-600">삭제</button>
+                </td>`;
+            tbody.appendChild(tr);
+        });
+    };
+
+    // 홈페이지 제품 카드: 기존 카드 구조/스타일은 그대로 두고 수량 단계 행만 제품별로 교체
+    function patchPublicCards(){
+        const grid = document.getElementById('dynamicProductsGrid');
+        if(!grid) return;
+        Array.from(grid.children).forEach((card,idx)=>{
+            const p = appData.products && appData.products[idx];
+            if(!p) return;
+            const box = card.querySelector('.bg-sky-50\\/70');
+            if(!box) return;
+            const title = box.querySelector('.font-bold.text-chem-900');
+            let html = title ? title.outerHTML : '<div class="font-bold text-chem-900 text-[11px] mb-1 flex items-center"><i class="fa-solid fa-table-list text-chem-600 mr-1.5"></i> 수량별 표준 단가표</div>';
+            const tiers = getProductTiers(p);
+            tiers.forEach((t,i)=>{
+                html += `<div class="flex justify-between items-center text-[11px] ${i<tiers.length-1?'text-slate-600 border-b border-sky-200/50 pb-1':'text-chem-600 font-bold'}">
+                    <span>${esc(t.name)} (${esc(formatTierRangeDisplayForPreview(t))})</span>
+                    <span class="${i===tiers.length-1?'text-xs sm:text-sm font-extrabold':'font-bold text-slate-800'}">${esc(t.price || '-')} ${esc(t.currency || '원')}</span>
+                </div>`;
+            });
+            box.innerHTML = html;
+        });
+    }
+
+    // (신규) patchModalPricing이 상세 팝업의 고정 3단계 영역(prodModalRange1~3, prodModalPrice1~3)을
+    // 동적 HTML로 완전히 교체해버리면, 다음 제품을 열 때 기존 openProductDetailModal/enhanceModalPricing이
+    // 그 ID들을 다시 찾지 못해 오류가 나고 팝업이 열리지 않는다.
+    // 그래서 팝업을 열 때마다 해당 영역을 최초 원본 상태로 복원한 뒤 다시 채워 넣도록 한다.
+    let prodModalTierGridOriginalHTML = null;
+    function restoreProdModalTierGrid(){
+        let grid = document.getElementById('prodModalDynamicTierGrid');
+        if(!grid) grid = document.querySelector('#productDetailModal .bg-sky-50 .grid');
+        if(!grid) return;
+        if(prodModalTierGridOriginalHTML === null){
+            prodModalTierGridOriginalHTML = grid.innerHTML;
+        } else {
+            grid.innerHTML = prodModalTierGridOriginalHTML;
+        }
+    }
+
+    // 제품 상세 팝업: 기존 모달 외형을 그대로 사용하고 수량 단계 부분만 동적으로 교체
+    function patchModalPricing(idx){
+        const p = appData.products && appData.products[idx];
+        if(!p) return;
+        const grid = document.getElementById('prodModalDynamicTierGrid') || document.querySelector('#productDetailModal .bg-sky-50 .grid');
+        if(!grid) return;
+        grid.id = 'prodModalDynamicTierGrid';
+        grid.innerHTML = getProductTiers(p).map((t,i)=>`
+            <div class="bg-white p-2.5 sm:p-3 rounded-lg border border-sky-200">
+                <span class="block text-[10px] sm:text-[11px] font-bold text-slate-500 mb-0.5 sm:mb-1">${esc(t.name)} (${esc(formatTierRangeDisplayForPreview(t))})</span>
+                <span class="text-xs sm:text-base font-extrabold ${i===getProductTiers(p).length-1?'text-chem-600':'text-chem-900'}">${esc(t.price || '-')} ${esc(t.currency || '원')}</span>
+            </div>`).join('');
+    }
+
+    // 기존 openProductDetailModal이 3개 ID를 참조하므로, 호출 직전에 기존 호환값을 임시 제공
+    const originalOpenProductDetailModal = window.openProductDetailModal;
+    window.openProductDetailModal = function(idx){
+        const p = appData.products && appData.products[idx];
+        if(!p) return;
+        const tiers = getProductTiers(p);
+        if(!p.pricing) p.pricing = {};
+        const old = {t1:p.pricing.t1,t2:p.pricing.t2,t3:p.pricing.t3};
+        for(let i=0;i<3;i++){
+            const t = tiers[i];
+            if(t) p.pricing[`t${i+1}`] = {name:t.name,range:buildRange(t),from:t.from,to:t.to,unit:t.unit,currency:t.currency,price:t.price};
+            else p.pricing[`t${i+1}`] = {name:DEFAULT_TIER_NAMES[i],range:'',from:'',to:'',unit:'개',currency:'원',price:'-'};
+        }
+        try{
+            restoreProdModalTierGrid();
+            if(typeof originalOpenProductDetailModal === 'function') originalOpenProductDetailModal(idx);
+            patchModalPricing(idx);
+        }finally{
+            p.pricing.t1 = old.t1;
+            p.pricing.t2 = old.t2;
+            p.pricing.t3 = old.t3;
+        }
+    };
+
+    // 제품소개 미리보기는 기존 고정 3단계 ID를 사용하지 않고 현재 편집 중인 제품의 단계대로 생성
+    const originalPreviewAdminChange = window.previewAdminChange;
+    window.previewAdminChange = function(tabType){
+        if(tabType !== 'productTab'){
+            if(typeof originalPreviewAdminChange === 'function') return originalPreviewAdminChange(tabType);
+            return;
+        }
+        const previewModal = document.getElementById('adminPreviewModal');
+        const previewContent = document.getElementById('previewModalContent');
+        const confirmBtn = document.getElementById('previewConfirmBtn');
+        if(!previewModal || !previewContent || !confirmBtn) return;
+        const cat = document.getElementById('newProdCategory').value;
+        const title = document.getElementById('newProdTitle').value;
+        const desc = document.getElementById('newProdDesc').value;
+        const tiers = readTierEditor();
+        const imgs = getMultiImgValues('productImgContainer');
+        const firstImg = imgs.length ? imgs[0] : SITE_IMAGE_FALLBACK;
+        const rows = tiers.map((t,i)=>`<div class="flex justify-between items-center ${i<tiers.length-1?'border-b border-sky-200/50 pb-1':''}"><span>${esc(t.name || `단계 ${i+1}`)} (${esc(formatTierRangeDisplayForPreview(t))})</span><span class="font-bold ${i===tiers.length-1?'text-chem-600':''}">${esc(t.price || '-')} ${esc(t.currency || '원')}</span></div>`).join('');
+        previewContent.innerHTML = `
+            <div class="max-w-sm mx-auto bg-white border border-slate-200 rounded-xl overflow-hidden shadow-md p-4 space-y-3">
+                <div class="h-36 bg-slate-100 rounded-lg overflow-hidden relative">
+                    <img src="${esc(firstImg)}" alt="" class="w-full h-full object-cover">
+                    <span class="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] px-2 py-0.5 rounded font-bold">${esc(cat || '분류 미입력')}</span>
+                </div>
+                <h4 class="font-bold text-slate-900 text-base">${esc(title || '제품명 미입력')}</h4>
+                <p class="text-xs text-slate-600 whitespace-pre-line">${esc(desc)}</p>
+                <div class="bg-sky-50 p-2.5 rounded-lg text-xs space-y-1">${rows || '<div class="text-slate-400">수량 단계가 없습니다.</div>'}</div>
+                ${buildPreviewImageGallery(imgs, '제품 이미지')}
+            </div>`;
+        previewContent.querySelectorAll('img').forEach(applyImageFallback);
+        confirmBtn.onclick = function(){ saveProductItem(true); closePreviewModal(); };
+        previewModal.classList.remove('hidden');
+    };
+
+    // 기존 renderSite 이후에만 수량 단계 표시를 보정하여 다른 화면 구조에는 손대지 않음
+    const originalRenderSite = window.renderSite;
+    if(typeof originalRenderSite === 'function' && !originalRenderSite.__kemtechProductTierRestore){
+        const wrappedRenderSite = function(){
+            const result = originalRenderSite.apply(this,arguments);
+            try{ patchPublicCards(); }catch(e){ console.error(e); }
+            return result;
+        };
+        wrappedRenderSite.__kemtechProductTierRestore = true;
+        window.renderSite = wrappedRenderSite;
+    }
+
+    function boot(){
+        initTierEditor();
+        try{ renderAdminProductTable(); }catch(e){ console.error(e); }
+        try{ patchPublicCards(); }catch(e){}
+    }
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
