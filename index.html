@@ -1765,18 +1765,20 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     <header class="bg-chem-900 text-white sticky top-0 z-40 shadow-md border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
             <!-- 로고 -->
-            <a href="#home" class="flex items-center space-x-2 sm:space-x-3 group">
-                <div id="navCompanyLogoWrap" class="hidden h-8 sm:h-10 max-w-[150px] sm:max-w-[190px] items-center">
-                    <img id="navCompanyLogo" src="" alt="회사 로고" class="max-h-8 sm:max-h-10 max-w-[150px] sm:max-w-[190px] object-contain">
+            <a href="#home" class="relative flex items-center h-8 sm:h-10 min-w-[32px] sm:min-w-[40px] group">
+                <div id="navCompanyLogoWrap" class="hidden absolute inset-y-0 left-0 items-center max-w-[150px] sm:max-w-[190px]">
+                    <img id="navCompanyLogo" src="" alt="회사 로고" class="max-h-8 sm:max-h-10 max-w-[150px] sm:max-w-[190px] object-contain object-left">
                 </div>
-                <div id="navDefaultLogoWrap" class="w-8 h-8 sm:w-10 sm:h-10 bg-chem-600 rounded-lg flex items-center justify-center text-white shadow-md group-hover:bg-chem-accent transition">
-                    <i class="fa-solid fa-atom text-lg sm:text-xl"></i>
+                <div class="absolute inset-y-0 left-0 flex items-center gap-2 sm:gap-3">
+                    <div id="navDefaultLogoWrap" class="w-8 h-8 sm:w-10 sm:h-10 bg-chem-600 rounded-lg flex items-center justify-center text-white shadow-md group-hover:bg-chem-accent transition">
+                        <i class="fa-solid fa-atom text-lg sm:text-xl"></i>
+                    </div>
+                    <div id="navLogoTextWrap">
+                        <span id="navLogoTitle" class="text-base sm:text-xl font-extrabold tracking-wider">KEMTECH</span>
+                        <span id="navLogoSub" class="block text-[8px] sm:text-[10px] text-chem-accent tracking-widest font-semibold">ADVANCED MATERIALS</span>
+                    </div>
                 </div>
-                <div id="navLogoTextWrap">
-                    <span id="navLogoTitle" class="text-base sm:text-xl font-extrabold tracking-wider">KEMTECH</span>
-                    <span id="navLogoSub" class="block text-[8px] sm:text-[10px] text-chem-accent tracking-widest font-semibold">ADVANCED MATERIALS</span>
-                </div>
-                <div id="navLogoPlaceholderWrap" class="hidden items-center">
+                <div id="navLogoPlaceholderWrap" class="hidden absolute inset-y-0 left-0 items-center">
                     <span class="border-2 border-dashed border-white/50 rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-bold text-white/80 tracking-wide">로고 위치</span>
                 </div>
             </a>
