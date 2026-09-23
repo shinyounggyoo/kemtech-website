@@ -1776,6 +1776,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                     <span id="navLogoTitle" class="text-base sm:text-xl font-extrabold tracking-wider">KEMTECH</span>
                     <span id="navLogoSub" class="block text-[8px] sm:text-[10px] text-chem-accent tracking-widest font-semibold">ADVANCED MATERIALS</span>
                 </div>
+                <div id="navLogoPlaceholderWrap" class="hidden items-center">
+                    <span class="border-2 border-dashed border-white/50 rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-bold text-white/80 tracking-wide">로고 위치</span>
+                </div>
             </a>
 
             <!-- 데스크탑 GNB 메뉴 -->
@@ -2080,7 +2083,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
         <!-- 대시보드 화면 -->
         <div id="adminDashboardBox" class="bg-white w-full max-w-7xl h-[92vh] rounded-2xl shadow-2xl hidden flex flex-col overflow-hidden border border-slate-200">
             <div id="adminHeaderBar" class="bg-slate-900 text-white px-4 sm:px-6 py-3.5 sm:py-4 flex justify-between items-center border-b border-slate-800">
-                <div class="flex items-center gap-3 min-w-0"><button type="button" onclick="window.open(window.location.href.split('#')[0], '_blank', 'noopener,noreferrer')" class="bg-white text-slate-900 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap"><i class="fa-solid fa-house mr-1"></i> 홈</button><h3 id="adminPanelTitle" onclick="switchAdminTab('aboutTab')" title="클릭하면 회사소개 관리 화면으로 이동합니다" class="text-xs sm:text-base font-bold flex items-center truncate max-w-[260px] sm:max-w-none cursor-pointer"><i class="fa-solid fa-gauge text-chem-accent mr-2"></i> KEMTECH 통합 관리자 제어판</h3></div>
+                <div class="flex items-center gap-3 min-w-0"><button type="button" onclick="window.open(window.location.href.split('#')[0], '_blank', 'noopener,noreferrer')" class="bg-white text-slate-900 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap"><i class="fa-solid fa-house mr-1"></i> 홈</button><h3 id="adminPanelTitle" onclick="switchAdminTab('homeTab')" title="클릭하면 홈 관리 화면으로 이동합니다" class="text-xs sm:text-base font-bold flex items-center truncate max-w-[260px] sm:max-w-none cursor-pointer"><i class="fa-solid fa-gauge text-chem-accent mr-2"></i> KEMTECH 통합 관리자 제어판</h3></div>
                 <button onclick="toggleAdminModal(false)" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             
@@ -2158,13 +2161,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                                     <p class="text-[10px] text-slate-500 mt-1">등록한 회사 로고는 홈페이지 상단과 Footer에 함께 적용됩니다.</p>
                                 </div>
                                 <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
-                                    <input type="file" id="homeLogoFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="w-full sm:flex-1 text-xs border border-slate-300 rounded-lg bg-white px-3 py-2">
-                                    <button type="button" onclick="clearHomeLogo()" class="shrink-0 bg-white border border-slate-300 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-100">기본 로고로 복원</button>
+                                    <input type="file" id="homeLogoFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" onchange="handleHomeLogoFileSelect(this)" class="w-full sm:flex-1 text-xs border border-slate-300 rounded-lg bg-white px-3 py-2">
+                                    <button type="button" onclick="applyHomeLogoSelection()" class="shrink-0 bg-chem-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-chem-accent">기본 로고로 적용</button>
                                 </div>
-                                <div id="homeLogoPreviewWrap" class="hidden bg-white border border-slate-200 rounded-lg p-3">
-                                    <p class="text-[10px] text-slate-400 mb-2">현재 등록 로고 미리보기</p>
-                                    <img id="homeLogoPreview" src="" alt="회사 로고 미리보기" class="max-h-16 max-w-full object-contain cursor-pointer" onclick="openBrandIconZoom(this.src)" title="클릭하여 확대 보기">
-                                </div>
+                                <div id="homeLogoPreviewWrap" class="bg-white border border-slate-200 rounded-lg p-3"></div>
                                 <div class="bg-white border border-slate-200 rounded-lg p-3 text-[10px] text-slate-500 leading-relaxed">
                                     <p class="font-bold text-slate-700 mb-1">권장 이미지 규격 및 형식</p>
                                     <p>• 상단: 가로 300~600px, 높이 80~160px 권장 (표시 영역에 맞춰 자동 축소)</p>
@@ -3332,16 +3332,23 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
             // 회사 로고 Render (상단 / Footer)
             const companyLogo = (appData.home && typeof appData.home.logo === "string") ? appData.home.logo.trim() : "";
+            const homeLogoConfigured = !!(appData.home && appData.home.logoConfigured);
             const navCompanyLogoWrap = document.getElementById("navCompanyLogoWrap");
             const navDefaultLogoWrap = document.getElementById("navDefaultLogoWrap");
             const navLogoTextWrap = document.getElementById("navLogoTextWrap");
+            const navLogoPlaceholderWrap = document.getElementById("navLogoPlaceholderWrap");
             const navCompanyLogo = document.getElementById("navCompanyLogo");
             if (navCompanyLogoWrap && navDefaultLogoWrap && navLogoTextWrap && navCompanyLogo) {
+                const showPlaceholder = !companyLogo && !homeLogoConfigured;
                 navCompanyLogo.src = companyLogo;
                 navCompanyLogoWrap.classList.toggle("hidden", !companyLogo);
                 navCompanyLogoWrap.classList.toggle("flex", !!companyLogo);
-                navDefaultLogoWrap.classList.toggle("hidden", !!companyLogo);
-                navLogoTextWrap.classList.toggle("hidden", !!companyLogo);
+                navDefaultLogoWrap.classList.toggle("hidden", !!companyLogo || showPlaceholder);
+                navLogoTextWrap.classList.toggle("hidden", !!companyLogo || showPlaceholder);
+                if (navLogoPlaceholderWrap) {
+                    navLogoPlaceholderWrap.classList.toggle("hidden", !showPlaceholder);
+                    navLogoPlaceholderWrap.classList.toggle("flex", showPlaceholder);
+                }
             }
             const footerCompanyLogoWrap = document.getElementById("footerCompanyLogoWrap");
             const footerDefaultBrandWrap = document.getElementById("footerDefaultBrandWrap");
@@ -3894,7 +3901,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 try { localStorage.setItem("kemtech_app_db", JSON.stringify(appData)); } catch(e) { console.error("Login history saving error:", e); }
                 document.getElementById("adminLoginBox").classList.add("hidden");
                 document.getElementById("adminDashboardBox").classList.remove("hidden");
-                switchAdminTab('aboutTab');
+                switchAdminTab('homeTab');
             } else {
                 alert("아이디 또는 비밀번호가 올바르지 않습니다.");
             }
@@ -4571,15 +4578,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             document.getElementById("editHomeSub").value = appData.home.sub || "";
             document.getElementById("editHomeSeoDescription").value = appData.home.seoDescription || "";
             document.getElementById("editHomeSliderInterval").value = Math.round((Number(appData.home.sliderInterval) || 5000) / 1000);
-            const logoPreviewWrap = document.getElementById("homeLogoPreviewWrap");
-            const logoPreview = document.getElementById("homeLogoPreview");
-            const currentLogo = (appData.home.logo || "").trim();
-            if (logoPreviewWrap && logoPreview) {
-                logoPreview.src = currentLogo;
-                logoPreviewWrap.classList.toggle("hidden", !currentLogo);
-            }
             const logoFile = document.getElementById("homeLogoFile");
             if (logoFile) logoFile.value = "";
+            renderHomeLogoOptions();
             setHomeImageSettings(appData.home.images);
         }
 
@@ -4593,43 +4594,161 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             const sliderSeconds = Math.min(30, Math.max(3, Number(document.getElementById("editHomeSliderInterval").value) || 5));
             appData.home.sliderInterval = sliderSeconds * 1000;
             appData.home.images = getHomeImageSettings();
-            const logoFileInput = document.getElementById("homeLogoFile");
-            if (logoFileInput && logoFileInput.files && logoFileInput.files[0]) {
-                const file = logoFileInput.files[0];
-                const allowedTypes = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
-                if (!allowedTypes.includes(file.type)) {
-                    alert("PNG, JPG/JPEG, WebP, SVG 형식의 이미지만 등록할 수 있습니다.");
-                    return;
-                }
-                if (file.size > 2 * 1024 * 1024) {
-                    alert("로고 파일은 2MB 이하로 등록해 주세요.");
-                    return;
-                }
-                const logoDataUrl = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = () => reject(new Error("logo-read-error"));
-                    reader.readAsDataURL(file);
-                });
-                appData.home.logo = String(logoDataUrl || "");
-                if (!appData.footer) appData.footer = {};
-                appData.footer.brandIcon = appData.home.logo;
-            }
             saveData();
             alert("홈 화면 설정이 성공적으로 저장되었습니다.");
         }
 
-        function clearHomeLogo() {
-            if (!confirm("등록된 회사 로고를 제거하고 기본 로고로 복원하시겠습니까?")) return;
+        // --- 회사 로고 등록/비교/게시 선택 (업로드된 로고 이미지 라이브러리 관리) ---
+        const HOME_LOGO_LIBRARY_MAX = 8;
+
+        function handleHomeLogoFileSelect(input) {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            const allowedTypes = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+            if (!allowedTypes.includes(file.type)) {
+                alert("PNG, JPG/JPEG, WebP, SVG 형식의 이미지만 등록할 수 있습니다.");
+                input.value = "";
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                alert("로고 파일은 2MB 이하로 등록해 주세요.");
+                input.value = "";
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                const dataUrl = String(reader.result || "");
+                if (!appData.home) appData.home = {};
+                if (!Array.isArray(appData.home.logoLibrary)) appData.home.logoLibrary = [];
+                if (!appData.home.logoLibrary.includes(dataUrl)) {
+                    appData.home.logoLibrary.unshift(dataUrl);
+                    const currentLogo = (appData.home.logo || "").trim();
+                    while (appData.home.logoLibrary.length > HOME_LOGO_LIBRARY_MAX) {
+                        const removeIdx = appData.home.logoLibrary.length - 1;
+                        if (appData.home.logoLibrary[removeIdx] === currentLogo) break;
+                        appData.home.logoLibrary.splice(removeIdx, 1);
+                    }
+                }
+                saveData();
+                input.value = "";
+                renderHomeLogoOptions(String(appData.home.logoLibrary.indexOf(dataUrl)));
+            };
+            reader.onerror = () => alert("로고 파일을 읽는 중 오류가 발생했습니다.");
+            reader.readAsDataURL(file);
+        }
+
+        function renderHomeLogoOptions(preferredValue) {
+            const wrap = document.getElementById("homeLogoPreviewWrap");
+            if (!wrap) return;
             if (!appData.home) appData.home = {};
-            appData.home.logo = "";
+            if (!Array.isArray(appData.home.logoLibrary)) appData.home.logoLibrary = [];
+            const currentLogo = (typeof appData.home.logo === "string") ? appData.home.logo.trim() : "";
+            if (currentLogo && !appData.home.logoLibrary.includes(currentLogo)) {
+                appData.home.logoLibrary.unshift(currentLogo);
+            }
+            const library = appData.home.logoLibrary.filter(Boolean);
+            const showDefaultCard = !appData.home.hideDefaultIcon || library.length === 0;
+
+            let selectedValue = preferredValue;
+            if (selectedValue === undefined) selectedValue = String(currentLogo ? library.indexOf(currentLogo) : -1);
+            if (selectedValue !== "-1" && !library[Number(selectedValue)]) selectedValue = "-1";
+            if (selectedValue === "-1" && !showDefaultCard) selectedValue = "0";
+
+            const defaultBrandName = (appData.footer && appData.footer.brandName) ? appData.footer.brandName : "KEMTECH";
+            const defaultCard = showDefaultCard ? `
+                <label class="relative border-2 rounded-lg p-2 flex flex-col items-center justify-center gap-1 cursor-pointer transition ${selectedValue === "-1" ? 'border-chem-600 bg-chem-50' : 'border-slate-200 bg-white'}">
+                    <input type="radio" name="homeLogoSelect" value="-1" class="sr-only" ${selectedValue === "-1" ? 'checked' : ''} onchange="renderHomeLogoOptions('-1')">
+                    <button type="button" class="absolute -top-2 -right-2 w-5 h-5 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center text-[9px] shadow z-10" title="기본 로고 삭제" onclick="event.preventDefault();event.stopPropagation();deleteHomeLogoLibraryItem(-1)"><i class="fa-solid fa-trash"></i></button>
+                    <div class="w-full h-14 bg-chem-900 rounded-md flex items-center justify-center gap-2 px-2">
+                        <div class="w-7 h-7 bg-chem-600 rounded-md flex items-center justify-center text-white shrink-0"><i class="fa-solid fa-atom text-sm"></i></div>
+                        <div class="leading-tight text-left">
+                            <span class="block text-white text-xs font-extrabold tracking-wider">${defaultBrandName}</span>
+                            <span class="block text-chem-accent text-[7px] tracking-widest font-semibold">ADVANCED MATERIALS</span>
+                        </div>
+                    </div>
+                    <span class="text-[9px] font-bold text-center ${selectedValue === "-1" ? 'text-chem-600' : 'text-slate-500'}">기본로고</span>
+                </label>` : "";
+
+            const libraryCards = library.map((url, idx) => {
+                const valueStr = String(idx);
+                const isSelected = selectedValue === valueStr;
+                const isCurrent = url === currentLogo;
+                return `
+                <label class="relative border-2 rounded-lg p-2 flex flex-col items-center justify-center gap-1 cursor-pointer transition ${isSelected ? 'border-chem-600 bg-chem-50' : 'border-slate-200 bg-white'}">
+                    <input type="radio" name="homeLogoSelect" value="${valueStr}" class="sr-only" ${isSelected ? 'checked' : ''} onchange="renderHomeLogoOptions('${valueStr}')">
+                    <button type="button" class="absolute -top-2 -right-2 w-5 h-5 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center text-[9px] shadow z-10" title="이 로고 이미지 삭제" onclick="event.preventDefault();event.stopPropagation();deleteHomeLogoLibraryItem(${idx})"><i class="fa-solid fa-trash"></i></button>
+                    <img src="${url}" alt="업로드 로고 ${idx+1}" class="max-h-14 max-w-full object-contain cursor-zoom-in" onclick="event.preventDefault();event.stopPropagation();openBrandIconZoom('${url.replace(/'/g, "\\'")}')">
+                    <span class="text-[9px] font-bold text-center ${isCurrent ? 'text-chem-600' : 'text-slate-500'}">${isCurrent ? '기본로고' : '업로드된 로고'}</span>
+                </label>`;
+            }).join("");
+
+            wrap.innerHTML = `
+                <p class="text-[10px] text-slate-400 mb-2">게시할 로고를 선택한 뒤 위의 <strong>'기본 로고로 적용'</strong> 버튼을 눌러주세요. 각 이미지 우측 상단의 <i class="fa-solid fa-trash text-red-500"></i> 아이콘으로 업로드한 로고를 바로 삭제할 수 있습니다.</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    ${defaultCard}
+                    ${libraryCards}
+                </div>
+            `;
+        }
+
+        function deleteHomeLogoLibraryItem(idx) {
+            if (!appData.home) return;
+            if (idx === -1) {
+                if (!Array.isArray(appData.home.logoLibrary) || appData.home.logoLibrary.filter(Boolean).length === 0) {
+                    alert("업로드된 로고가 없어 기본 로고는 삭제할 수 없습니다. 최소 1개의 로고 옵션은 남아 있어야 합니다.");
+                    return;
+                }
+                if (!confirm("기본 로고를 목록에서 삭제하시겠습니까? 삭제하면 목록에 더 이상 표시되지 않습니다.")) return;
+                const hasCustomLogo = !!(appData.home.logo || "").trim();
+                if (hasCustomLogo) {
+                    appData.home.logo = "";
+                    if (!appData.footer) appData.footer = {};
+                    if (footerIconIsImage(appData.footer.brandIcon || "")) appData.footer.brandIcon = "🧪";
+                }
+                appData.home.logoConfigured = false;
+                appData.home.hideDefaultIcon = true;
+                saveData();
+                renderHomeLogoOptions();
+                return;
+            }
+            if (!Array.isArray(appData.home.logoLibrary)) return;
+            const url = appData.home.logoLibrary[idx];
+            if (!url) return;
+            if (!confirm("이 업로드된 로고 이미지를 목록에서 삭제하시겠습니까?")) return;
+            appData.home.logoLibrary.splice(idx, 1);
+            if (url === (appData.home.logo || "").trim()) {
+                appData.home.logo = "";
+                if (!appData.footer) appData.footer = {};
+                if (footerIconIsImage(appData.footer.brandIcon || "")) appData.footer.brandIcon = "🧪";
+            }
+            saveData();
+            renderHomeLogoOptions();
+        }
+
+        function applyHomeLogoSelection() {
+            const selected = document.querySelector('input[name="homeLogoSelect"]:checked');
+            const value = selected ? selected.value : "-1";
+            if (!appData.home) appData.home = {};
+            if (!Array.isArray(appData.home.logoLibrary)) appData.home.logoLibrary = [];
+            let resultLogo = "";
+            if (value !== "-1") {
+                resultLogo = appData.home.logoLibrary[Number(value)] || "";
+                if (!resultLogo) { alert("선택한 로고 이미지를 찾을 수 없습니다. 다시 선택해 주세요."); renderHomeLogoOptions(); return; }
+                if (!confirm("선택한 로고를 홈페이지에 적용하시겠습니까?")) return;
+            } else {
+                if (!confirm("기본 아이콘 로고로 적용하시겠습니까? 홈페이지에서 등록된 회사 로고 이미지가 제거됩니다.")) return;
+            }
+            appData.home.logo = resultLogo;
+            appData.home.logoConfigured = true;
             if (!appData.footer) appData.footer = {};
-            if (footerIconIsImage(appData.footer.brandIcon || "")) appData.footer.brandIcon = "🧪";
-            const logoFile = document.getElementById("homeLogoFile");
-            if (logoFile) logoFile.value = "";
+            if (resultLogo) {
+                appData.footer.brandIcon = resultLogo;
+            } else if (footerIconIsImage(appData.footer.brandIcon || "")) {
+                appData.footer.brandIcon = "🧪";
+            }
             saveData();
             loadHomeAdminForm();
-            alert("기본 로고로 복원되었습니다.");
+            alert("로고 설정이 홈페이지에 적용되었습니다.");
         }
 
         // --- 회사 소개 핵심 수치 카드 / 세부사항 버튼 (홈페이지 게시선택 포함) ---
@@ -6349,6 +6468,34 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
         }
 
         // ================= 관리자 미리보기 팝업 모달 제어 =================
+        function buildPreviewHeaderHtml() {
+            const currentLogo = (appData.home && typeof appData.home.logo === "string") ? appData.home.logo.trim() : "";
+            const logoConfigured = !!(appData.home && appData.home.logoConfigured);
+            const brandName = (appData.footer && appData.footer.brandName) ? appData.footer.brandName : "KEMTECH";
+            const items = getGnbItems().filter(g => g.visible !== false && g.title && g.target);
+            const navHtml = items.map((g, idx) => `<span class="text-[11px] sm:text-xs font-bold ${idx === 0 ? 'text-chem-accent' : 'text-white/70'}">${g.title}</span>`).join('');
+            let logoHtml;
+            if (currentLogo) {
+                logoHtml = `<img src="${currentLogo}" alt="회사 로고" class="max-h-8 sm:max-h-9 max-w-[140px] object-contain">`;
+            } else if (logoConfigured) {
+                logoHtml = `<div class="flex items-center gap-2">
+                        <div class="w-7 h-7 sm:w-8 sm:h-8 bg-chem-600 rounded-lg flex items-center justify-center text-white shrink-0"><i class="fa-solid fa-atom text-xs sm:text-sm"></i></div>
+                        <div class="leading-tight">
+                            <span class="block text-xs sm:text-sm font-extrabold tracking-wider">${brandName}</span>
+                            <span class="block text-[7px] sm:text-[8px] text-chem-accent tracking-widest font-semibold">ADVANCED MATERIALS</span>
+                        </div>
+                   </div>`;
+            } else {
+                logoHtml = `<span class="border-2 border-dashed border-white/50 rounded-lg px-3 py-1.5 text-[10px] sm:text-xs font-bold text-white/80 tracking-wide">로고 위치</span>`;
+            }
+            return `
+                <div class="bg-chem-900 text-white rounded-lg px-3 sm:px-5 py-2.5 sm:py-3 flex items-center justify-between mb-4">
+                    <div class="flex items-center">${logoHtml}</div>
+                    <nav class="hidden sm:flex items-center gap-4">${navHtml}</nav>
+                </div>
+            `;
+        }
+
         function buildPreviewImageGallery(images, label = "등록 이미지") {
             const validImages = (images || []).map(normalizeImageValue).filter(Boolean).slice(0, 10);
             if (!validImages.length) {
@@ -6388,6 +6535,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 const bgImg = imgs.length > 0 ? imgs[0] : SITE_IMAGE_FALLBACK;
 
                 html = `
+                    ${buildPreviewHeaderHtml()}
                     <div class="relative bg-slate-900 text-white p-6 sm:p-10 rounded-xl overflow-hidden">
                         <img src="${bgImg}" alt="" class="absolute inset-0 w-full h-full object-cover opacity-30">
                         <div class="relative z-10 space-y-3">
@@ -7506,6 +7654,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     var sec = Math.round(Number(val("editHomeSliderInterval")) || 5);
     var bg = pub.length ? pub[0].url : SITE_IMAGE_FALLBACK;
     var html = '<div id="kemtechHomePreviewRoot">' +
+      (typeof buildPreviewHeaderHtml === "function" ? buildPreviewHeaderHtml() : "") +
       '<div class="relative bg-slate-900 text-white p-6 sm:p-10 rounded-xl overflow-hidden">' +
         '<img src="' + esc(bg) + '" alt="" class="absolute inset-0 w-full h-full object-cover opacity-30">' +
         '<div class="relative z-10 space-y-3">' +
