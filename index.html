@@ -5895,11 +5895,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             if ((appData.adminUsers || []).some((u,i) => i !== idx && u.id === id)) { alert('이미 사용 중인 로그인 ID입니다.'); return; }
             if (idx >= 0) {
                 const old = appData.adminUsers[idx];
-                appData.adminUsers[idx] = {...old, name, id: old.id, role, email, password: pw || old.password};
+                if (!old) { alert('수정할 관리자 정보를 찾을 수 없습니다.'); return; }
+                // 등록된 로그인 ID는 절대 변경하지 않고, 수정한 정보만 기존 회원 객체에 반영
+                old.name = name;
+                old.role = role;
+                old.email = email;
+                if (pw) old.password = pw;
+                if (currentAdminUser && currentAdminUser.id === old.id) currentAdminUser = old;
             } else {
                 appData.adminUsers.push({ name, id, role, email, password: pw, createdAt: new Date().toLocaleString('ko-KR') });
             }
             saveData();
+            // 저장 직후 실제 localStorage 값이 갱신되었는지 동일 데이터로 확정
+            try { localStorage.setItem('kemtech_app_db', JSON.stringify(appData)); } catch(e) { console.error('Member data saving error:', e); }
             renderAdminMemberTable();
             resetMemberForm();
             alert('회원 정보가 저장되었습니다.');
@@ -7639,7 +7647,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   /* ====== 2단계 실제 Supabase 적용 시 이 두 값만 입력 ====== */
   const KEMTECH_SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL';
   const KEMTECH_SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-  const KEMTECH_LOCAL_OTP_PREFIX = 'kemtech_google_otp_v4_';
+  const KEMTECH_LOCAL_OTP_PREFIX = 'kemtech_google_otp_v7_';
 
   let kemtechSupabase = null;
   let kemtechPendingUser = null;
