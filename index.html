@@ -2708,7 +2708,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                         </div>
                         <div class="border rounded-xl overflow-x-auto">
                             <table class="w-full text-left border-collapse text-xs min-w-[760px]">
-                                <thead class="bg-slate-100 text-slate-600 border-b"><tr><th class="p-3">로그인 시간</th><th class="p-3">사용자</th><th class="p-3">로그인 ID</th><th class="p-3">로그아웃 시간</th><th class="p-3">구분</th></tr></thead>
+                                <thead class="bg-slate-100 text-slate-600 border-b"><tr><th class="p-3">로그인 시간</th><th class="p-3">사용자</th><th class="p-3">로그인 ID</th><th class="p-3">로그아웃 시간</th><th class="p-3">로그인 IP 주소</th><th class="p-3">구분</th></tr></thead>
                                 <tbody id="adminLoginHistoryTableBody" class="divide-y divide-slate-200"></tbody>
                             </table>
                         </div>
@@ -3823,15 +3823,29 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             if (!user) return;
             if (!Array.isArray(appData.loginHistory)) appData.loginHistory = [];
             const now = new Date();
-            appData.loginHistory.unshift({
+            const historyRecord = {
                 date: now.toLocaleString('ko-KR'),
                 loginTime: now.toISOString(),
                 logoutTime: '',
                 user: user.name || user.id || '관리자',
                 id: user.id || '',
+                loginIp: '',
                 type: '로그인 성공'
-            });
+            };
+            appData.loginHistory.unshift(historyRecord);
             appData.loginHistory = appData.loginHistory.slice(0, 200);
+            // 현재 브라우저의 공인 IP를 조회하여 방금 생성한 로그인 이력에만 저장합니다.
+            // IP 조회가 차단되더라도 기존 로그인 기능에는 영향을 주지 않습니다.
+            fetch('https://api.ipify.org?format=json', { cache: 'no-store' })
+                .then(r => r.ok ? r.json() : Promise.reject(new Error('IP 조회 실패')))
+                .then(data => {
+                    if (data && data.ip) {
+                        historyRecord.loginIp = data.ip;
+                        try { localStorage.setItem('kemtech_app_db', JSON.stringify(appData)); } catch(e) {}
+                        if (typeof renderAdminLoginHistoryTable === 'function') renderAdminLoginHistoryTable();
+                    }
+                })
+                .catch(() => {});
         }
 
         function getLoginHistoryDate(row) {
@@ -3889,10 +3903,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             const list = Array.isArray(listOverride) ? listOverride : (Array.isArray(appData.loginHistory) ? appData.loginHistory : []);
             renderAdminLoginHistoryUserFilter(Array.isArray(appData.loginHistory) ? appData.loginHistory : []);
             if (!list.length) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-400">등록된 로그인 이력이 없습니다.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400">등록된 로그인 이력이 없습니다.</td></tr>';
                 return;
             }
-            tbody.innerHTML = list.map(h => `<tr class="hover:bg-slate-50"><td class="p-3 whitespace-nowrap text-slate-500">${formatDateOneLine(formatLoginHistoryDate(h))}</td><td class="p-3 font-bold">${h.user || '-'}</td><td class="p-3">${h.id || '-'}</td><td class="p-3 whitespace-nowrap text-slate-500">${h.logoutTime ? formatDateOneLine(formatLoginHistoryDate({loginTime:h.logoutTime})) : '-'}</td><td class="p-3">${h.type || '로그인 성공'}</td></tr>`).join('');
+            tbody.innerHTML = list.map(h => `<tr class="hover:bg-slate-50"><td class="p-3 whitespace-nowrap text-slate-500">${formatDateOneLine(formatLoginHistoryDate(h))}</td><td class="p-3 font-bold">${h.user || '-'}</td><td class="p-3">${h.id || '-'}</td><td class="p-3 whitespace-nowrap text-slate-500">${h.logoutTime ? formatDateOneLine(formatLoginHistoryDate({loginTime:h.logoutTime})) : '-'}</td><td class="p-3 whitespace-nowrap text-slate-500">${h.loginIp || '-'}</td><td class="p-3">${h.type || '로그인 성공'}</td></tr>`).join('');
         }
 
         function filterLoginHistory() {
