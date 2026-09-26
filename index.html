@@ -1634,6 +1634,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     #footerItemsAdminList .footer-row-icon-col + div {
       flex:1 1 auto !important; width:auto !important; max-width:none !important; box-sizing:border-box !important;
     }
+    /* SNS 명 입력란 시작 위치를 항목 제목과 동일하게 맞춤:
+       항목 제목 행의 아이콘 칸은 아이콘+초기화 버튼(36px+6px+36px=78px)이 들어가 넓지만,
+       SNS 등록 행의 아이콘 칸은 아이콘 1개(36px)만 있어 좁아서 SNS 명 입력란이 더 왼쪽에서 시작됨.
+       아이콘 칸에 항목 제목 쪽과 동일한 최소 너비를 주어 두 입력란의 시작 위치를 일치시킴. */
+    #footerItemsAdminList .footer-row-icon-col {
+      min-width:78px !important;
+    }
+    /* 아이콘 라벨과 항목 제목/SNS 명 라벨의 수직 위치를 동일하게 맞춤:
+       두 칸의 콘텐츠 높이 차이로 인해 items-center 중앙 정렬 시 라벨 글자 위치가 미세하게 어긋나므로
+       상단 정렬로 변경하여 두 라벨이 항상 같은 높이에서 시작하도록 함. */
+    #footerItemsAdminList .footer-admin-grid > div:first-child {
+      align-items:flex-start !important;
+    }
   }
 </style>
 
