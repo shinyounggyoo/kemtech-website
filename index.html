@@ -2627,7 +2627,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                                 <div><label class="block text-[11px] font-bold text-slate-700 mb-1">로그인 ID</label><input id="newMemberId" type="text" placeholder="예: kimcs" class="w-full bg-white border rounded-lg px-3 py-2 text-xs"></div>
                                 <div><label class="block text-[11px] font-bold text-slate-700 mb-1">권한</label><select id="newMemberRole" class="w-full bg-white border rounded-lg px-3 py-2 text-xs"><option value="관리자">관리자</option><option value="담당자">담당자</option></select></div>
                                 <div><label class="block text-[11px] font-bold text-slate-700 mb-1">이메일</label><input id="newMemberEmail" type="email" placeholder="견적 접수 알림 이메일" class="w-full bg-white border rounded-lg px-3 py-2 text-xs"></div>
-                                <div><label class="block text-[11px] font-bold text-slate-700 mb-1">비밀번호</label><input id="newMemberPw" type="password" placeholder="신규 등록 또는 변경 시 입력" class="w-full bg-white border rounded-lg px-3 py-2 text-xs"></div>
+                                <div><label class="block text-[11px] font-bold text-slate-700 mb-1">비밀번호</label><input id="newMemberPw" type="password" autocomplete="new-password" placeholder="신규 등록 또는 변경 시 입력" class="w-full bg-white border rounded-lg px-3 py-2 text-xs"></div>
                             </div>
                             <div class="flex items-center gap-2 pt-1">
                                 <button onclick="saveMember()" id="memberSubmitBtn" class="bg-chem-600 text-white px-5 py-2.5 rounded-lg text-xs font-bold hover:bg-chem-accent">회원 저장</button>
@@ -2976,7 +2976,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             ],
             inquiries: [],
             adminUsers: [
-                { id: "admin", name: "관리자", role: "관리자", email: "", password: "1234", createdAt: "기본 계정" }
+                { id: "admin", name: "관리자", role: "관리자", email: "admin@kemtech.co.kr", password: "1234", createdAt: "기본 계정" }
             ],
             history: [],
             loginHistory: [],
@@ -3005,7 +3005,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 if (!appData.about) appData.about = DEFAULT_DATA.about;
                 if (!Array.isArray(appData.about.extraSections)) appData.about.extraSections = [];
                 if (!Array.isArray(appData.adminUsers) || !appData.adminUsers.length) appData.adminUsers = DEFAULT_DATA.adminUsers.map(u => ({...u}));
-                appData.adminUsers.forEach(u => { if (typeof u.email !== "string") u.email = ""; });
+                appData.adminUsers.forEach(u => {
+                    if (typeof u.email !== "string") u.email = "";
+                    if (u.id === "admin" && !u.email.trim()) u.email = "admin@kemtech.co.kr";
+                });
+                try { localStorage.setItem("kemtech_app_db", JSON.stringify(appData)); } catch(_e) {}
                 if (!Array.isArray(appData.history)) appData.history = [];
                 if (!Array.isArray(appData.loginHistory)) appData.loginHistory = [];
                 if (!Array.isArray(appData.gnb) || !appData.gnb.length) appData.gnb = DEFAULT_DATA.gnb.map(g => ({...g}));
@@ -5881,37 +5885,107 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             document.getElementById('memberCancelBtn').classList.add('hidden');
         }
 
-        function saveMember(skipConfirm = false) {
+        async function saveMember(skipConfirm = false) {
             if (!skipConfirm && !confirm("회원 정보를 등록/수정하시겠습니까?")) return;
-            const idx = parseInt(document.getElementById('editMemberIndex').value);
-            const name = document.getElementById('newMemberName').value.trim();
-            const id = document.getElementById('newMemberId').value.trim();
-            const role = document.getElementById('newMemberRole').value;
-            const email = document.getElementById('newMemberEmail').value.trim();
-            const pw = document.getElementById('newMemberPw').value;
-            if (!name || !id || !email) { alert('사용자명, 로그인 ID, 이메일은 필수입니다.'); return; }
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('올바른 이메일 주소를 입력하세요.'); return; }
+            const idx = parseInt(document.getElementById('editMemberIndex')?.value || '-1', 10);
+            const users = Array.isArray(appData.adminUsers) ? appData.adminUsers : (appData.adminUsers = []);
+            const oldByIndex = idx >= 0 ? users[idx] : null;
+            if (idx >= 0 && !oldByIndex) { alert('수정할 관리자 정보를 찾을 수 없습니다.'); return; }
+
+            const nameEl = document.getElementById('newMemberName');
+            const idEl = document.getElementById('newMemberId');
+            const roleEl = document.getElementById('newMemberRole');
+            const emailEl = document.getElementById('newMemberEmail');
+            const pwEl = document.getElementById('newMemberPw');
+
+            const name = String(nameEl?.value ?? '').trim();
+            const enteredId = String(idEl?.value ?? '').trim();
+            const role = String(roleEl?.value ?? '관리자');
+            const email = String(emailEl?.value ?? '').trim();
+            const pw = String(pwEl?.value ?? '');
+            const isAdminEdit = idx >= 0 && String(oldByIndex?.id || '').trim().toLowerCase() === 'admin';
+
+            if (!name || !enteredId) { alert('사용자명, 로그인 ID는 필수입니다.'); return; }
+            if (!email) { alert('이메일을 입력하세요.'); if (emailEl) emailEl.focus(); return; }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('올바른 이메일 주소를 입력하세요.'); if (emailEl) emailEl.focus(); return; }
             if (idx < 0 && !pw) { alert('신규 사용자는 비밀번호를 입력해야 합니다.'); return; }
-            if ((appData.adminUsers || []).some((u,i) => i !== idx && u.id === id)) { alert('이미 사용 중인 로그인 ID입니다.'); return; }
+
             if (idx >= 0) {
-                const old = appData.adminUsers[idx];
-                if (!old) { alert('수정할 관리자 정보를 찾을 수 없습니다.'); return; }
-                // 등록된 로그인 ID는 절대 변경하지 않고, 수정한 정보만 기존 회원 객체에 반영
-                old.name = name;
-                old.role = role;
-                old.email = email;
-                if (pw) old.password = pw;
-                if (currentAdminUser && currentAdminUser.id === old.id) currentAdminUser = old;
+                const fixedId = oldByIndex.id;
+                const target = users.find(u => u && String(u.id || '').trim() === String(fixedId || '').trim()) || oldByIndex;
+                const changed = [];
+                if ((target.name || '') !== name) changed.push('사용자명');
+                if ((target.role || '관리자') !== role) changed.push('권한');
+                if ((target.email || '') !== email) changed.push('이메일');
+                if (pw !== '') changed.push('비밀번호');
+
+                // admin 계정은 변경 항목이 있든 없든 회원정보 수정 버튼을 누르면 Google OTP를 확인합니다.
+                if (isAdminEdit) {
+                    const otpOk = await window.kemtechVerifyAdminChangeOtp(target);
+                    if (!otpOk) return;
+                } else if (!changed.length) {
+                    alert('변경된 정보가 없습니다.');
+                    return;
+                }
+
+                target.name = name;
+                target.id = fixedId;
+                target.role = role;
+                target.email = email;
+                if (pw !== '') target.password = pw;
+
+                if (isAdminEdit) {
+                    addHistoryRecord('관리자 인원관리', '수정', `admin 계정 정보 변경: ${changed.length ? changed.join(', ') : '회원정보 확인'} (Google OTP 인증 완료)`);
+                }
+                if (currentAdminUser && currentAdminUser.id === fixedId) currentAdminUser = target;
             } else {
-                appData.adminUsers.push({ name, id, role, email, password: pw, createdAt: new Date().toLocaleString('ko-KR') });
+                if (users.some(u => u && u.id === enteredId)) { alert('이미 사용 중인 로그인 ID입니다.'); return; }
+                users.push({ name, id: enteredId, role, email, password: pw, createdAt: new Date().toLocaleString('ko-KR') });
             }
-            saveData();
-            // 저장 직후 실제 localStorage 값이 갱신되었는지 동일 데이터로 확정
-            try { localStorage.setItem('kemtech_app_db', JSON.stringify(appData)); } catch(e) { console.error('Member data saving error:', e); }
+
+            try {
+                const persisted = JSON.stringify(appData);
+                localStorage.setItem('kemtech_app_db', persisted);
+                const verify = JSON.parse(localStorage.getItem('kemtech_app_db') || '{}');
+                if (!Array.isArray(verify.adminUsers)) throw new Error('adminUsers 저장 검증 실패');
+                const verifyTarget = idx >= 0
+                    ? verify.adminUsers.find(u => u && String(u.id || '').trim() === String((oldByIndex?.id || enteredId)).trim())
+                    : verify.adminUsers.find(u => u && String(u.id || '').trim() === enteredId);
+                if (idx >= 0 && isAdminEdit && (!verifyTarget || verifyTarget.email !== email)) throw new Error('admin 이메일 저장 검증 실패');
+                appData.adminUsers = verify.adminUsers;
+                if (currentAdminUser) {
+                    const refreshed = appData.adminUsers.find(u => u.id === currentAdminUser.id);
+                    if (refreshed) currentAdminUser = refreshed;
+                }
+                lastSavedSnapshot = JSON.stringify(historySnapshot(appData));
+            } catch(e) {
+                console.error('Member data saving error:', e);
+                alert('회원 정보 저장 중 오류가 발생했습니다.');
+                return;
+            }
+
             renderAdminMemberTable();
             resetMemberForm();
             alert('회원 정보가 저장되었습니다.');
         }
+
+        // admin 계정의 민감한 정보 변경 전 Google Authenticator 재인증.
+        // OTP 창의 상태/Promise는 OTP 전용 IIFE에서 관리하도록 연결합니다.
+        window.kemtechVerifyAdminChangeOtp = async function(targetUser) {
+            const isAdmin = targetUser && String(targetUser.id || '').trim().toLowerCase() === 'admin';
+            if (!isAdmin) return true;
+            if (typeof window.kemtechRequestAdminChangeOtp !== 'function') {
+                alert('Google OTP 인증 기능을 불러오지 못했습니다. 페이지를 새로고침한 후 다시 시도하세요.');
+                return false;
+            }
+            try {
+                return await window.kemtechRequestAdminChangeOtp(targetUser);
+            } catch (e) {
+                console.error('admin change OTP bridge error:', e);
+                alert('Google OTP 인증 준비 중 오류가 발생했습니다.');
+                return false;
+            }
+        };
 
         function editMember(idx) {
             const u = appData.adminUsers[idx];
@@ -5922,20 +5996,42 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             document.getElementById('newMemberId').readOnly = true;
             document.getElementById('newMemberId').classList.add('bg-slate-100');
             document.getElementById('newMemberRole').value = u.role || '관리자';
-            document.getElementById('newMemberEmail').value = u.email || '';
+            document.getElementById('newMemberEmail').value = (u.id === 'admin' && !(u.email || '').trim()) ? 'admin@kemtech.co.kr' : (u.email || '');
             document.getElementById('newMemberPw').value = '';
             document.getElementById('memberSubmitBtn').textContent = '회원 정보 수정';
             document.getElementById('memberCancelBtn').classList.remove('hidden');
         }
 
-        function resetMemberPassword(idx) {
-            const u = appData.adminUsers[idx];
-            if (!u) return;
+        async function resetMemberPassword(idx) {
+            const users = Array.isArray(appData.adminUsers) ? appData.adminUsers : [];
+            const u = users[idx];
+            if (!u) { alert('변경할 관리자 정보를 찾을 수 없습니다.'); return; }
+
             const newPw = prompt(`'${u.name || u.id}' 사용자의 새 비밀번호를 입력하세요.`);
             if (newPw === null) return;
-            if (newPw.trim().length < 4) { alert('비밀번호는 4자 이상 입력하세요.'); return; }
-            u.password = newPw.trim();
-            saveData();
+            if (newPw.length < 4) { alert('비밀번호는 4자 이상 입력하세요.'); return; }
+
+            const isAdminReset = String(u.id || '').trim().toLowerCase() === 'admin';
+            if (isAdminReset) {
+                const otpOk = await window.kemtechVerifyAdminChangeOtp(u);
+                if (!otpOk) return;
+            }
+
+            u.password = newPw;
+            if (isAdminReset) addHistoryRecord('관리자 인원관리', '수정', 'admin 계정 정보 변경: 비밀번호 (Google OTP 인증 완료)');
+            try {
+                localStorage.setItem('kemtech_app_db', JSON.stringify(appData));
+                const verify = JSON.parse(localStorage.getItem('kemtech_app_db') || '{}');
+                const refreshed = Array.isArray(verify.adminUsers) ? verify.adminUsers.find(x => x && x.id === u.id) : null;
+                if (!refreshed || refreshed.password !== newPw) throw new Error('비밀번호 저장 검증 실패');
+                appData.adminUsers = verify.adminUsers;
+                if (currentAdminUser && currentAdminUser.id === u.id) currentAdminUser = refreshed;
+                lastSavedSnapshot = JSON.stringify(historySnapshot(appData));
+            } catch(e) {
+                console.error('Member password saving error:', e);
+                alert('비밀번호 저장 중 오류가 발생했습니다.');
+                return;
+            }
             renderAdminMemberTable();
             alert('비밀번호가 변경되었습니다.');
         }
@@ -5957,7 +6053,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             (appData.adminUsers || []).forEach((u, idx) => {
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-50';
-                tr.innerHTML = `<td class="p-3 font-bold">${u.name || '-'}</td><td class="p-3">${u.id || '-'}</td><td class="p-3">${u.role || '-'}</td><td class="p-3 text-slate-500">${u.email || '-'}</td><td class="p-3 text-slate-500 whitespace-nowrap">${formatDateTwoLines(u.createdAt) || '-'}</td><td class="p-3 text-center space-x-1"><button onclick="editMember(${idx})" class="bg-slate-700 text-white px-2 py-1 rounded text-[11px]">수정</button><button onclick="resetMemberPassword(${idx})" class="bg-amber-500 text-white px-2 py-1 rounded text-[11px]">비밀번호 초기화</button><button onclick="deleteMember(${idx})" class="bg-red-500 text-white px-2 py-1 rounded text-[11px]">삭제</button></td>`;
+                const isDefaultAdmin = String(u.id || '').trim().toLowerCase() === 'admin';
+                const deleteButton = isDefaultAdmin ? '<span class="inline-block px-2 py-1 text-[11px] invisible">삭제</span>' : `<button onclick="deleteMember(${idx})" class="bg-red-500 text-white px-2 py-1 rounded text-[11px]">삭제</button>`;
+                tr.innerHTML = `<td class="p-3 font-bold">${u.name || '-'}<\/td><td class="p-3">${u.id || '-'}<\/td><td class="p-3">${u.role || '-'}<\/td><td class="p-3 text-slate-500">${u.email || '-'}<\/td><td class="p-3 text-slate-500 whitespace-nowrap">${formatDateTwoLines(u.createdAt) || '-'}<\/td><td class="p-3 text-center space-x-1"><button onclick="editMember(${idx})" class="bg-slate-700 text-white px-2 py-1 rounded text-[11px]">수정<\/button><button onclick="resetMemberPassword(${idx})" class="bg-amber-500 text-white px-2 py-1 rounded text-[11px]">비밀번호 초기화<\/button>${deleteButton}<\/td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -7404,6 +7502,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
         else startObserver();
     })();
 
+    /* 관리자 인원관리 버튼에서 사용하는 함수는 inline onclick에서도 직접 접근할 수 있도록 명시적으로 연결 */
+    window.resetMemberForm = resetMemberForm;
+    window.saveMember = saveMember;
+    window.editMember = editMember;
+    window.resetMemberPassword = resetMemberPassword;
+    window.deleteMember = deleteMember;
+    window.renderAdminMemberTable = renderAdminMemberTable;
+
 </script>
 
 <style id="v11_permission_controls">
@@ -7653,6 +7759,8 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   let kemtechPendingUser = null;
   let kemtechPendingFactorId = null;
   let kemtechLocalPendingSecret = null;
+  let kemtechLocalAdminSecret = '';
+  let kemtechAdminChangeOtpResolver = null;
   let kemtechLocalMode = true;
 
   function configured(){
@@ -7716,7 +7824,22 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     return false;
   }
   function localKey(id){ return KEMTECH_LOCAL_OTP_PREFIX+btoa(unescape(encodeURIComponent(id))).replace(/[^A-Za-z0-9]/g,'_'); }
-  function getLocalSecret(id){ try{return localStorage.getItem(localKey(id))||'';}catch(e){return ''; } }
+  function getLocalSecret(id){
+    try{
+      const current = localStorage.getItem(localKey(id)) || '';
+      if(current) return current;
+      const encoded = btoa(unescape(encodeURIComponent(id))).replace(/[^A-Za-z0-9]/g,'_');
+      const legacyPrefixes = ['kemtech_google_otp_v6_','kemtech_google_otp_v5_','kemtech_google_otp_v4_'];
+      for(const prefix of legacyPrefixes){
+        const legacy = localStorage.getItem(prefix + encoded) || '';
+        if(legacy){
+          try{ localStorage.setItem(localKey(id), legacy); }catch(_e){}
+          return legacy;
+        }
+      }
+      return '';
+    }catch(e){return ''; }
+  }
   function setLocalSecret(id,secret){ try{localStorage.setItem(localKey(id),secret);return true;}catch(e){return false;} }
   function makeOtpUri(user,secret){
     const label=encodeURIComponent("DON'T WORRY DESIGN:"+user.id);
@@ -7753,6 +7876,88 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     modal(true);
     setTimeout(()=>document.getElementById('kemtechOtpCode')?.focus(),100);
   }
+
+  // 관리자 인원관리의 OTP 재인증은 이 IIFE가 Promise 상태와 모달 상태를 직접 관리합니다.
+  // 로그인에 사용한 동일한 Google Authenticator Secret을 그대로 재사용합니다.
+  window.kemtechRequestAdminChangeOtp = async function(targetUser){
+    const isAdmin = targetUser && String(targetUser.id || '').trim().toLowerCase() === 'admin';
+    if(!isAdmin) return true;
+
+    // 현재는 Supabase 설정 전 PC 로컬 TOTP 테스트 모드입니다.
+    // Supabase 값이 입력된 경우에는 기존 MFA 방식으로 처리합니다.
+    if(configured()){
+      try{
+        const sb=client();
+        if(!sb) throw new Error('Supabase client not available');
+        const aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+        if(aal.error) throw aal.error;
+        if(aal.data.currentLevel==='aal2') return true;
+
+        const factors=await sb.auth.mfa.listFactors();
+        if(factors.error) throw factors.error;
+        const totp=(factors.data.totp||[]).filter(f=>f.status==='verified');
+        kemtechPendingUser=targetUser;
+        kemtechLocalMode=false;
+
+        if(totp.length){
+          kemtechPendingFactorId=totp[0].id;
+          document.getElementById('kemtechOtpEnrollArea')?.classList.add('hidden');
+          document.getElementById('kemtechOtpChallengeArea')?.classList.remove('hidden');
+          status('admin 계정 변경을 위해 Google Authenticator의 현재 6자리 번호를 입력하세요.');
+          modal(true);
+          setTimeout(()=>document.getElementById('kemtechOtpCode')?.focus(),100);
+        }else{
+          const enroll=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'KEMTECH 관리자 Google OTP'});
+          if(enroll.error) throw enroll.error;
+          kemtechPendingFactorId=enroll.data.id;
+          document.getElementById('kemtechOtpEnrollArea')?.classList.remove('hidden');
+          document.getElementById('kemtechOtpChallengeArea')?.classList.add('hidden');
+          const qr=document.getElementById('kemtechOtpQr');
+          if(qr){
+            qr.innerHTML='';
+            const qrImg=document.createElement('img');
+            qrImg.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(enroll.data.totp.qr_code);
+            qrImg.alt='Google Authenticator 등록 QR 코드';
+            qrImg.width=220; qrImg.height=220; qrImg.style.display='block'; qrImg.style.width='220px'; qrImg.style.height='220px'; qrImg.style.margin='0 auto';
+            qr.appendChild(qrImg);
+          }
+          const sec=document.getElementById('kemtechOtpSecret');
+          if(sec) sec.textContent=(enroll.data.totp.secret||'').match(/.{1,4}/g)?.join(' ')||enroll.data.totp.secret||'';
+          status('admin 계정 변경을 위한 최초 1회 Google Authenticator 등록입니다. QR을 등록한 후 6자리 번호를 입력하세요.');
+          modal(true);
+          setTimeout(()=>document.getElementById('kemtechOtpEnrollCode')?.focus(),100);
+        }
+        return await new Promise(resolve=>{ kemtechAdminChangeOtpResolver=resolve; });
+      }catch(e){
+        console.error('admin change OTP error:',e);
+        alert('Google OTP 인증 준비 중 오류가 발생했습니다.');
+        return false;
+      }
+    }
+
+    const targetId=String(targetUser?.id||'').trim();
+    const storedSecret=getLocalSecret(targetId);
+    const secret=kemtechLocalAdminSecret||storedSecret;
+    if(secret) kemtechLocalAdminSecret=secret;
+    kemtechPendingUser=targetUser;
+    kemtechLocalMode=true;
+
+    return await new Promise(resolve=>{
+      kemtechAdminChangeOtpResolver=resolve;
+      if(secret){
+        showLocalChallenge();
+      }else{
+        const newSecret=randomBase32(20);
+        showLocalEnrollment(targetUser,newSecret);
+      }
+    });
+  };
+
+  // 관리자 인원관리 OTP 재인증에서 사용하는 로컬 TOTP 헬퍼를 명시적으로 노출합니다.
+  window.kemtechGetLocalSecret = getLocalSecret;
+  window.kemtechRandomBase32 = randomBase32;
+  window.kemtechShowLocalEnrollment = showLocalEnrollment;
+  window.kemtechShowLocalChallenge = showLocalChallenge;
 
   async function openMfaForSignedInUser(){
     const sb=client();
@@ -7805,6 +8010,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     if(!configured()){
       kemtechLocalMode=true;
       const secret=getLocalSecret(id);
+      if(secret) kemtechLocalAdminSecret=secret;
       if(!secret){
         const newSecret=randomBase32(20);
         /* 등록 확인이 성공하기 전에는 OTP 비밀키를 저장하지 않습니다. */
@@ -7841,10 +8047,33 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     try{
       status('OTP 인증 확인 중...');
       if(kemtechLocalMode){
-        const secret=getLocalSecret(kemtechPendingUser?.id||'');
-        if(!secret){status('OTP 등록 정보가 없습니다. 로그인 화면으로 돌아가 다시 등록하세요.',true);return;}
+        const pendingId=String(kemtechPendingUser?.id||'').trim();
+        const storedSecret=getLocalSecret(pendingId);
+        const secret=kemtechLocalAdminSecret||storedSecret;
+        if(secret) kemtechLocalAdminSecret=secret;
+        if(!secret){
+          // 관리자 정보 변경 중 최초 등록 상태라면 오류 메시지 대신
+          // 즉시 최초 1회 Google Authenticator 등록 화면을 표시합니다.
+          if(kemtechAdminChangeOtpResolver && kemtechPendingUser){
+            const newSecret=randomBase32(20);
+            showLocalEnrollment(kemtechPendingUser,newSecret);
+            return;
+          }
+          status('OTP 등록 정보가 없습니다. 최초 1회 등록을 진행하세요.',true);return;
+        }
         const ok=await verifyTotp(secret,code);
         if(!ok) throw new Error('Invalid local TOTP');
+        if(kemtechAdminChangeOtpResolver){
+          const resolve=kemtechAdminChangeOtpResolver;
+          kemtechAdminChangeOtpResolver=null;
+          kemtechPendingUser=null;
+          kemtechPendingFactorId=null;
+          kemtechLocalPendingSecret=null;
+          modal(false);
+          resetFields();
+          resolve(true);
+          return;
+        }
         await finishAdminLoginAfterMfa(); return;
       }
       const sb=client(); if(!sb || !kemtechPendingFactorId) throw new Error('MFA factor not found');
@@ -7867,6 +8096,17 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
         const ok=await verifyTotp(kemtechLocalPendingSecret,code);
         if(!ok) throw new Error('Invalid local enrollment code');
         if(!setLocalSecret(kemtechPendingUser.id,kemtechLocalPendingSecret)) throw new Error('OTP secret save failed');
+        kemtechLocalAdminSecret=kemtechLocalPendingSecret;
+        if(kemtechAdminChangeOtpResolver){
+          const resolve=kemtechAdminChangeOtpResolver;
+          kemtechAdminChangeOtpResolver=null;
+          kemtechLocalPendingSecret=null;
+          kemtechPendingUser=null;
+          kemtechPendingFactorId=null;
+          modal(false);
+          resolve(true);
+          return;
+        }
         await finishAdminLoginAfterMfa(); return;
       }
       const sb=client(); if(!sb || !kemtechPendingFactorId) throw new Error('MFA factor not found');
