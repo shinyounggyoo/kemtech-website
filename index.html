@@ -7785,10 +7785,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
       const secret=getLocalSecret(id);
       if(!secret){
         const newSecret=randomBase32(20);
-        if(!setLocalSecret(id,newSecret)){
-          alert('이 PC의 브라우저에 Google OTP 등록 정보를 저장할 수 없습니다. 브라우저의 사이트 데이터 저장을 허용한 후 다시 시도하세요.');
-          kemtechPendingUser=null; return;
-        }
+        /* 등록 확인이 성공하기 전에는 OTP 비밀키를 저장하지 않습니다. */
         showLocalEnrollment(user,newSecret);
       }else{
         showLocalChallenge();
