@@ -5858,6 +5858,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             document.getElementById('editMemberIndex').value = '-1';
             document.getElementById('newMemberName').value = '';
             document.getElementById('newMemberId').value = '';
+            document.getElementById('newMemberId').readOnly = false;
+            document.getElementById('newMemberId').classList.remove('bg-slate-100');
             document.getElementById('newMemberRole').value = '관리자';
             document.getElementById('newMemberEmail').value = '';
             document.getElementById('newMemberPw').value = '';
@@ -5879,7 +5881,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             if ((appData.adminUsers || []).some((u,i) => i !== idx && u.id === id)) { alert('이미 사용 중인 로그인 ID입니다.'); return; }
             if (idx >= 0) {
                 const old = appData.adminUsers[idx];
-                appData.adminUsers[idx] = {...old, name, id, role, email, password: pw || old.password};
+                appData.adminUsers[idx] = {...old, name, id: old.id, role, email, password: pw || old.password};
             } else {
                 appData.adminUsers.push({ name, id, role, email, password: pw, createdAt: new Date().toLocaleString('ko-KR') });
             }
@@ -5895,6 +5897,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             document.getElementById('editMemberIndex').value = idx;
             document.getElementById('newMemberName').value = u.name || '';
             document.getElementById('newMemberId').value = u.id || '';
+            document.getElementById('newMemberId').readOnly = true;
+            document.getElementById('newMemberId').classList.add('bg-slate-100');
             document.getElementById('newMemberRole').value = u.role || '관리자';
             document.getElementById('newMemberEmail').value = u.email || '';
             document.getElementById('newMemberPw').value = '';
@@ -7559,6 +7563,324 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 #productTab .admin-product-table col:nth-child(7), #productTab .admin-product-table col:nth-child(12), #productTab .admin-product-table col:nth-child(17) { width: 68px !important; }
 #productTab .admin-product-table col:nth-child(8), #productTab .admin-product-table col:nth-child(13), #productTab .admin-product-table col:nth-child(18) { width: 62px !important; }
 </style>
+<!-- ================= Google OTP (PC 1단계 로컬 테스트 / 2단계 Supabase 전환) 시작 =================
+     ※ 기존 홈페이지/관리자 기능은 수정하지 않고, 관리자 로그인 2차 인증 영역만 교체합니다.
+     ※ 1단계: Supabase URL/Anon Key가 없어도 PC에서 Google Authenticator TOTP를 테스트합니다.
+     ※ 2단계: 아래 두 값에 실제 Supabase 값을 입력하면 기존 Supabase MFA 방식으로 전환됩니다.
+     ※ 중요: Google Authenticator는 SMS처럼 OTP 번호를 "보내는" 방식이 아니라 휴대폰 앱에서 6자리 번호를 생성합니다.
+====================================================================== -->
+<style>
+#kemtechOtpModal{position:fixed;inset:0;background:rgba(2,6,23,.72);z-index:99999;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+#kemtechOtpModal.show{display:flex}
+#kemtechOtpPanel{width:min(460px,100%);background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 20px 50px rgba(15,23,42,.28);padding:24px}
+#kemtechOtpPanel input{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:11px 12px;font-size:15px;outline:none}
+#kemtechOtpPanel input:focus{border-color:#0A5FA0;box-shadow:0 0 0 3px rgba(10,95,160,.10)}
+#kemtechOtpQr{display:block;width:220px;height:220px;margin:12px auto;object-fit:contain;background:#fff}
+#kemtechOtpStatus{font-size:12px;line-height:1.5;min-height:18px}
+#kemtechOtpSecret{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;word-break:break-all;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:9px;font-size:12px;color:#334155;letter-spacing:.5px}
+#kemtechOtpUri{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;word-break:break-all;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px;font-size:9px;color:#64748b;display:none}
+#kemtechOtpQrFallback{font-size:11px;line-height:1.45;color:#64748b;text-align:center;margin-top:4px}
+</style>
+<div id="kemtechOtpModal" aria-hidden="true">
+  <div id="kemtechOtpPanel" role="dialog" aria-modal="true" aria-labelledby="kemtechOtpTitle">
+    <div class="flex justify-between items-center mb-4">
+      <h3 id="kemtechOtpTitle" class="text-lg font-extrabold text-slate-900"><i class="fa-solid fa-shield-halved text-chem-600 mr-2"></i>Google OTP 인증</h3>
+      <button type="button" onclick="kemtechOtpCancel()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+
+    <div id="kemtechOtpEnrollArea" class="hidden">
+      <p class="text-sm font-bold text-slate-800">처음 1회 Google Authenticator 등록</p>
+      <p class="text-xs text-slate-500 mt-1">아래 QR을 휴대폰의 Google Authenticator로 스캔하세요. 스캔 후 휴대폰 앱에 표시되는 <b>6자리 번호를 이 화면에 입력</b>합니다.</p>
+      <div class="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800"><b>주의:</b> OTP 번호가 문자로 오는 것이 아닙니다. Google Authenticator 앱에서 30초마다 새로운 6자리 번호가 자동 생성됩니다.</div>
+      <div id="kemtechOtpQr" role="img" aria-label="Google Authenticator 등록 QR 코드"></div>
+      <div id="kemtechOtpQrFallback">QR 코드가 보이지 않으면 아래 등록 키를 Google Authenticator의 설정 키 입력에 직접 입력하세요.</div>
+      <div class="text-[11px] font-bold text-slate-600 mt-3 mb-1">등록 키</div>
+      <div id="kemtechOtpSecret"></div>
+      <div class="text-[11px] font-bold text-slate-600 mt-3 mb-1">등록 후 입력할 OTP</div>
+      <input id="kemtechOtpEnrollCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="Google Authenticator의 6자리 번호">
+      <button type="button" onclick="kemtechOtpEnrollVerify()" class="w-full mt-3 bg-chem-600 text-white py-3 rounded-lg font-bold text-sm hover:bg-chem-accent">등록 및 확인</button>
+    </div>
+
+    <div id="kemtechOtpChallengeArea" class="hidden">
+      <p class="text-sm font-bold text-slate-800">Google Authenticator OTP 입력</p>
+      <p class="text-xs text-slate-500 mt-1">휴대폰의 Google Authenticator 앱을 열고 현재 표시되는 6자리 번호를 입력하세요.</p>
+      <div class="mt-4">
+        <input id="kemtechOtpCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="OTP 코드 입력">
+      </div>
+      <button type="button" onclick="kemtechOtpVerify()" class="w-full mt-3 bg-chem-600 text-white py-3 rounded-lg font-bold text-sm hover:bg-chem-accent">확인</button>
+    </div>
+
+    <div id="kemtechOtpStatus" class="mt-3 text-slate-500"></div>
+    <button type="button" onclick="kemtechOtpCancel()" class="w-full mt-2 bg-slate-500 text-white py-2.5 rounded-lg font-bold text-sm hover:bg-slate-600">로그인으로 돌아가기</button>
+  </div>
+</div>
+
+<!-- QR 표시용 라이브러리. 인터넷이 없어도 등록 키 직접 입력 방식으로 계속 사용할 수 있습니다. -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  'use strict';
+
+  /* ====== 2단계 실제 Supabase 적용 시 이 두 값만 입력 ====== */
+  const KEMTECH_SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL';
+  const KEMTECH_SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+  const KEMTECH_LOCAL_OTP_PREFIX = 'kemtech_google_otp_v2_';
+
+  let kemtechSupabase = null;
+  let kemtechPendingUser = null;
+  let kemtechPendingFactorId = null;
+  let kemtechLocalPendingSecret = null;
+  let kemtechLocalMode = true;
+
+  function configured(){
+    return KEMTECH_SUPABASE_URL.indexOf('YOUR_') !== 0 && KEMTECH_SUPABASE_ANON_KEY.indexOf('YOUR_') !== 0;
+  }
+  function client(){
+    if(!configured()) return null;
+    if(!kemtechSupabase) kemtechSupabase = window.supabase.createClient(KEMTECH_SUPABASE_URL, KEMTECH_SUPABASE_ANON_KEY);
+    return kemtechSupabase;
+  }
+  function modal(show){
+    const m=document.getElementById('kemtechOtpModal');
+    if(!m) return;
+    m.classList.toggle('show',!!show);
+    m.setAttribute('aria-hidden',show?'false':'true');
+  }
+  function status(msg,error){
+    const el=document.getElementById('kemtechOtpStatus');
+    if(el){ el.textContent=msg||''; el.className='mt-3 text-xs '+(error?'text-red-600':'text-slate-500'); }
+  }
+  function resetFields(){
+    ['kemtechOtpCode','kemtechOtpEnrollCode'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+    document.getElementById('kemtechOtpEnrollArea')?.classList.add('hidden');
+    document.getElementById('kemtechOtpChallengeArea')?.classList.add('hidden');
+    const q=document.getElementById('kemtechOtpQr'); if(q){ q.removeAttribute('src'); q.innerHTML=''; }
+    const s=document.getElementById('kemtechOtpSecret'); if(s) s.textContent='';
+    kemtechPendingFactorId=null;
+    kemtechLocalPendingSecret=null;
+  }
+  window.kemtechOtpCancel=function(){
+    modal(false); resetFields(); kemtechPendingUser=null; kemtechLocalMode=true;
+    try{ if(kemtechSupabase) kemtechSupabase.auth.signOut(); }catch(e){}
+  };
+
+  /* ====== PC 1단계 로컬 TOTP ====== */
+  const B32='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  function randomBase32(len){
+    const a=new Uint8Array(len); crypto.getRandomValues(a); let s='';
+    for(let i=0;i<len;i++) s+=B32[a[i]&31];
+    return s;
+  }
+  function base32ToBytes(input){
+    const s=(input||'').toUpperCase().replace(/[^A-Z2-7]/g,''); let bits='',out=[];
+    for(const ch of s){ const v=B32.indexOf(ch); if(v<0) continue; bits+=v.toString(2).padStart(5,'0'); }
+    for(let i=0;i+8<=bits.length;i+=8) out.push(parseInt(bits.slice(i,i+8),2));
+    return new Uint8Array(out);
+  }
+  function bytesToHex(a){ return Array.from(a).map(x=>x.toString(16).padStart(2,'0')).join(''); }
+  async function hotp(secret,counter){
+    const key=await crypto.subtle.importKey('raw',base32ToBytes(secret),{name:'HMAC',hash:'SHA-1'},false,['sign']);
+    const msg=new ArrayBuffer(8), view=new DataView(msg);
+    view.setUint32(0,Math.floor(counter/0x100000000)); view.setUint32(4,counter>>>0);
+    const sig=new Uint8Array(await crypto.subtle.sign('HMAC',key,msg));
+    const off=sig[sig.length-1]&15;
+    const bin=((sig[off]&127)<<24)|(sig[off+1]<<16)|(sig[off+2]<<8)|sig[off+3];
+    return String(bin%1000000).padStart(6,'0');
+  }
+  async function verifyTotp(secret,code){
+    const now=Math.floor(Date.now()/1000/30);
+    for(let d=-1;d<=1;d++) if((await hotp(secret,now+d))===code) return true;
+    return false;
+  }
+  function localKey(id){ return KEMTECH_LOCAL_OTP_PREFIX+btoa(unescape(encodeURIComponent(id))).replace(/[^A-Za-z0-9]/g,'_'); }
+  function getLocalSecret(id){ try{return localStorage.getItem(localKey(id))||'';}catch(e){return ''; } }
+  function setLocalSecret(id,secret){ try{localStorage.setItem(localKey(id),secret);return true;}catch(e){return false;} }
+  function makeOtpUri(user,secret){
+    const label=encodeURIComponent("DON'T WORRY DESIGN:"+user.id);
+    const issuer=encodeURIComponent("DON'T WORRY DESIGN");
+    return 'otpauth://totp/'+label+'?secret='+encodeURIComponent(secret)+'&issuer='+issuer+'&algorithm=SHA1&digits=6&period=30';
+  }
+  function showLocalEnrollment(user,secret){
+    kemtechLocalPendingSecret=secret;
+    document.getElementById('kemtechOtpEnrollArea')?.classList.remove('hidden');
+    document.getElementById('kemtechOtpChallengeArea')?.classList.add('hidden');
+    const sec=document.getElementById('kemtechOtpSecret'); if(sec) sec.textContent=secret.match(/.{1,4}/g)?.join(' ')||secret;
+    const qr=document.getElementById('kemtechOtpQr');
+    if(qr){ qr.innerHTML=''; qr.removeAttribute('src'); }
+    const uri=makeOtpUri(user,secret);
+    if(qr && window.QRCode){
+      try{ new QRCode(qr,{text:uri,width:220,height:220,correctLevel:QRCode.CorrectLevel.M}); }
+      catch(e){ console.warn('QR 생성 실패:',e); }
+    } else if(qr){
+      const img=document.createElement('img');
+      img.alt='Google Authenticator 등록 QR 코드';
+      img.width=220; img.height=220; img.style.display='block'; img.style.width='220px'; img.style.height='220px'; img.style.margin='0 auto';
+      img.src='https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+encodeURIComponent(uri);
+      img.onerror=function(){ img.remove(); };
+      qr.appendChild(img);
+    }
+    status('1단계 PC 테스트입니다. Google Authenticator에 등록한 뒤 휴대폰 앱에 표시되는 6자리 번호를 입력하세요.');
+    modal(true);
+    setTimeout(()=>document.getElementById('kemtechOtpEnrollCode')?.focus(),100);
+  }
+  function showLocalChallenge(){
+    document.getElementById('kemtechOtpEnrollArea')?.classList.add('hidden');
+    document.getElementById('kemtechOtpChallengeArea')?.classList.remove('hidden');
+    status('Google Authenticator 앱의 현재 6자리 번호를 입력하세요. 번호는 30초마다 바뀝니다.');
+    modal(true);
+    setTimeout(()=>document.getElementById('kemtechOtpCode')?.focus(),100);
+  }
+
+  async function openMfaForSignedInUser(){
+    const sb=client();
+    if(!sb) throw new Error('Supabase client not available');
+    const aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(aal.error) throw aal.error;
+    if(aal.data.currentLevel==='aal2') return true;
+    const factors=await sb.auth.mfa.listFactors();
+    if(factors.error) throw factors.error;
+    const totp=(factors.data.totp||[]).filter(f=>f.status==='verified');
+    if(totp.length){
+      kemtechPendingFactorId=totp[0].id;
+      document.getElementById('kemtechOtpEnrollArea')?.classList.add('hidden');
+      document.getElementById('kemtechOtpChallengeArea')?.classList.remove('hidden');
+      status('Google Authenticator 앱의 현재 6자리 번호를 입력하세요.');
+      modal(true); setTimeout(()=>document.getElementById('kemtechOtpCode')?.focus(),100); return false;
+    }
+    const enroll=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'KEMTECH 관리자 Google OTP'});
+    if(enroll.error) throw enroll.error;
+    kemtechPendingFactorId=enroll.data.id;
+    document.getElementById('kemtechOtpEnrollArea')?.classList.remove('hidden');
+    document.getElementById('kemtechOtpChallengeArea')?.classList.add('hidden');
+    const qr=document.getElementById('kemtechOtpQr'); if(qr){qr.innerHTML=''; const qrImg=document.createElement('img'); qrImg.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(enroll.data.totp.qr_code); qrImg.alt='Google Authenticator 등록 QR 코드'; qrImg.width=220; qrImg.height=220; qrImg.style.display='block'; qrImg.style.width='220px'; qrImg.style.height='220px'; qrImg.style.margin='0 auto'; qr.appendChild(qrImg);}
+    const sec=document.getElementById('kemtechOtpSecret'); if(sec) sec.textContent=(enroll.data.totp.secret||'').match(/.{1,4}/g)?.join(' ')||enroll.data.totp.secret||'';
+    status('Supabase MFA 등록입니다. Google Authenticator에 QR을 등록하고 6자리 번호를 입력하세요.');
+    modal(true); setTimeout(()=>document.getElementById('kemtechOtpEnrollCode')?.focus(),100); return false;
+  }
+
+  async function finishAdminLoginAfterMfa(){
+    if(!kemtechPendingUser) return;
+    currentAdminUser=kemtechPendingUser;
+    addLoginHistoryRecord(kemtechPendingUser);
+    try{localStorage.setItem('kemtech_app_db',JSON.stringify(appData));}catch(e){console.error('Login history saving error:',e);}
+    document.getElementById('adminLoginBox').classList.add('hidden');
+    document.getElementById('adminDashboardBox').classList.remove('hidden');
+    switchAdminTab('homeTab');
+    kemtechPendingUser=null; kemtechPendingFactorId=null; kemtechLocalPendingSecret=null;
+    modal(false); resetFields();
+  }
+
+  window.processAdminLogin=async function(){
+    const id=document.getElementById('adminIdInput')?.value.trim()||'';
+    const pw=document.getElementById('adminPwInput')?.value||'';
+    const users=Array.isArray(appData.adminUsers)?appData.adminUsers:[];
+    const user=users.find(u=>u.id===id && u.password===pw);
+    if(!user){alert('아이디 또는 비밀번호가 올바르지 않습니다.');return;}
+    kemtechPendingUser=user;
+
+    /* 1단계: Supabase 설정 전에는 PC 로컬 TOTP로 테스트 */
+    if(!configured()){
+      kemtechLocalMode=true;
+      const secret=getLocalSecret(id);
+      if(!secret){
+        const newSecret=randomBase32(20);
+        if(!setLocalSecret(id,newSecret)){
+          alert('이 PC의 브라우저에 Google OTP 등록 정보를 저장할 수 없습니다. 브라우저의 사이트 데이터 저장을 허용한 후 다시 시도하세요.');
+          kemtechPendingUser=null; return;
+        }
+        showLocalEnrollment(user,newSecret);
+      }else{
+        showLocalChallenge();
+      }
+      return;
+    }
+
+    /* 2단계: 실제 운영에서는 Supabase MFA */
+    kemtechLocalMode=false;
+    if(!user.email){
+      alert('현재 관리자 계정에 이메일 주소가 등록되어 있지 않습니다. 관리자 인원관리에서 이메일을 먼저 등록하세요.');
+      kemtechPendingUser=null; return;
+    }
+    try{
+      const sb=client();
+      const signIn=await sb.auth.signInWithPassword({email:user.email,password:pw});
+      if(signIn.error) throw signIn.error;
+      const complete=await openMfaForSignedInUser();
+      if(complete) await finishAdminLoginAfterMfa();
+    }catch(e){
+      console.error('Google OTP login error:',e);
+      alert('Google OTP 인증 준비 중 오류가 발생했습니다.\n'+(e?.message||'인증 서버 연결을 확인하세요.'));
+      try{await client()?.auth.signOut();}catch(_e){}
+      kemtechPendingUser=null;
+    }
+  };
+
+  window.kemtechOtpVerify=async function(){
+    const code=(document.getElementById('kemtechOtpCode')?.value||'').replace(/\D/g,'');
+    if(code.length!==6){status('6자리 OTP 코드를 입력하세요.',true);return;}
+    try{
+      status('OTP 인증 확인 중...');
+      if(kemtechLocalMode){
+        const secret=getLocalSecret(kemtechPendingUser?.id||'');
+        if(!secret){status('OTP 등록 정보가 없습니다. 로그인 화면으로 돌아가 다시 등록하세요.',true);return;}
+        const ok=await verifyTotp(secret,code);
+        if(!ok) throw new Error('Invalid local TOTP');
+        await finishAdminLoginAfterMfa(); return;
+      }
+      const sb=client(); if(!sb || !kemtechPendingFactorId) throw new Error('MFA factor not found');
+      const result=await sb.auth.mfa.challengeAndVerify({factorId:kemtechPendingFactorId,code});
+      if(result.error) throw result.error;
+      const aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+      if(aal.error) throw aal.error;
+      if(aal.data.currentLevel!=='aal2') throw new Error('MFA 인증 수준이 AAL2로 올라가지 않았습니다.');
+      await finishAdminLoginAfterMfa();
+    }catch(e){console.error(e);status('OTP 코드가 올바르지 않습니다. 휴대폰 Google Authenticator의 현재 6자리 번호를 다시 확인하세요.',true);}
+  };
+
+  window.kemtechOtpEnrollVerify=async function(){
+    const code=(document.getElementById('kemtechOtpEnrollCode')?.value||'').replace(/\D/g,'');
+    if(code.length!==6){status('6자리 OTP 코드를 입력하세요.',true);return;}
+    try{
+      status('OTP 등록 확인 중...');
+      if(kemtechLocalMode){
+        if(!kemtechPendingUser || !kemtechLocalPendingSecret) throw new Error('Local OTP enrollment state missing');
+        const ok=await verifyTotp(kemtechLocalPendingSecret,code);
+        if(!ok) throw new Error('Invalid local enrollment code');
+        if(!setLocalSecret(kemtechPendingUser.id,kemtechLocalPendingSecret)) throw new Error('OTP secret save failed');
+        await finishAdminLoginAfterMfa(); return;
+      }
+      const sb=client(); if(!sb || !kemtechPendingFactorId) throw new Error('MFA factor not found');
+      const ch=await sb.auth.mfa.challenge({factorId:kemtechPendingFactorId});
+      if(ch.error) throw ch.error;
+      const v=await sb.auth.mfa.verify({factorId:kemtechPendingFactorId,challengeId:ch.data.id,code});
+      if(v.error) throw v.error;
+      const aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+      if(aal.error) throw aal.error;
+      if(aal.data.currentLevel!=='aal2') throw new Error('MFA 등록은 되었지만 현재 세션이 AAL2가 아닙니다.');
+      await finishAdminLoginAfterMfa();
+    }catch(e){console.error(e);status('OTP 등록 확인에 실패했습니다. Google Authenticator에 등록된 계정의 현재 6자리 번호를 다시 입력하세요.',true);}
+  };
+
+  const adminPwInput=document.getElementById('adminPwInput');
+  if(adminPwInput){
+    adminPwInput.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){
+        e.preventDefault();
+        window.processAdminLogin();
+      }
+    });
+  }
+
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Enter' && document.getElementById('kemtechOtpModal')?.classList.contains('show')){
+      const enroll=document.getElementById('kemtechOtpEnrollArea')?.classList.contains('hidden')===false;
+      if(enroll) window.kemtechOtpEnrollVerify(); else window.kemtechOtpVerify();
+    }
+  });
+})();
+</script>
+<!-- ================= Google OTP 추가 끝 ================= -->
 </body>
 </html>
 <style id="kemtech-v12-product-table-final-compact">
