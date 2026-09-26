@@ -109,6 +109,10 @@
             flex:1 1 100% !important;
         }
 .preview-image-scroll { scrollbar-width: thin; }
+/* 제품소개 관리자 화면의 버튼 줄(미리보기/제품 저장하기/전체상품 미리보기)이 모바일에서 2줄로 줄바꿈될 때,
+   space-x-3의 margin-left가 줄바꿈된 버튼에도 적용되어 좌측 정렬이 어긋나는 문제를 gap 기반으로 보정 */
+#productActionButtonsRow { column-gap:.75rem; row-gap:.5rem; }
+#productActionButtonsRow > * + * { margin-left:0 !important; }
 .preview-image-scroll::-webkit-scrollbar { height: 8px; }
 .preview-image-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 999px; }
 .preview-image-scroll::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 999px; }
@@ -1071,6 +1075,11 @@
   align-items:center !important; justify-content:center !important;
   white-space:nowrap !important; box-sizing:border-box !important;
 }
+/* 제품소개 관리자 "전체상품 미리보기" 버튼: 글자가 잘리지 않도록 좌우 여백을 넉넉히 확보 */
+#adminDashboardBox #productPreviewAllBtn {
+  width:auto !important; min-width:0 !important; max-width:none !important;
+  padding:10px 32px !important; white-space:nowrap !important; overflow:visible !important;
+}
 #adminDashboardBox button[onclick="saveAboutSettings()"],
 #adminDashboardBox button[onclick="saveInquiryFieldsSettings()"],
 #adminDashboardBox button[onclick="addGnbItem()"],
@@ -1616,6 +1625,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     #footerItemsAdminList .footer-admin-grid { grid-template-columns:minmax(0,1fr) !important; }
     #footerItemsAdminList .footer-admin-grid > div { width:100%; }
     #footerItemsAdminList .footer-action-group { justify-content:flex-start; flex-wrap:wrap; }
+    /* SNS 명 / 항목 제목 입력 공간 확대: 아이콘 칸은 내용(아이콘+초기화 버튼)만큼만 차지하고,
+       나머지 공간은 모두 SNS 명·항목 제목 입력란이 차지하도록 하여 "저작권(Copyright)" 같은
+       문구도 잘리지 않게 하고, 그만큼 입력란 시작 위치도 좌측으로 당겨준다. */
+    #footerItemsAdminList .footer-row-icon-col {
+      flex:0 0 auto !important; width:auto !important; max-width:none !important; box-sizing:border-box !important;
+    }
+    #footerItemsAdminList .footer-row-icon-col + div {
+      flex:1 1 auto !important; width:auto !important; max-width:none !important; box-sizing:border-box !important;
+    }
   }
 </style>
 
@@ -1928,6 +1946,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                     </span>
                 </a>
                 <p id="footerBrandDesc" class="text-slate-400 leading-relaxed">글로벌 첨단 화학 소재 및 정밀 화학 제품 제조 리더</p>
+                <div id="footerSnsRow" class="flex items-center flex-wrap gap-2 mt-4"></div>
             </div>
             <div id="footerItemsGrid" class="contents md:grid md:col-span-3 md:grid-cols-3 md:gap-8"></div>
         </div>
@@ -2071,11 +2090,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">관리자 아이디</label>
-                    <input type="text" id="adminIdInput" value="admin" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-chem-600">
+                    <input type="text" id="adminIdInput" value="" placeholder="관리자 아이디 입력" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-chem-600">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">비밀번호</label>
-                    <input type="password" id="adminPwInput" value="1234" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-chem-600">
+                    <input type="password" id="adminPwInput" value="" placeholder="비밀번호 입력" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-chem-600">
                 </div>
                 <button onclick="processAdminLogin()" class="w-full bg-chem-600 text-white py-3 rounded-lg font-bold text-sm hover:bg-chem-accent transition shadow">로그인</button>
                 <p class="text-[11px] text-slate-400 text-center mt-2">기본 계정: admin / 1234</p>
@@ -2381,12 +2400,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                                 <div id="productImgContainer" class="space-y-1.5"></div>
                             </div>
 
-                            <div class="flex items-center space-x-3 pt-2">
+                            <div id="productActionButtonsRow" class="flex items-center space-x-3 pt-2">
                                 <button onclick="previewAdminChange('productTab')" class="admin-action-fit bg-slate-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-800 transition shadow flex items-center">
                                     <i class="fa-solid fa-eye mr-1.5"></i> 미리보기
                                 </button>
                                 <button onclick="saveProductItem()" id="productSubmitBtn" class="bg-slate-900 text-white px-5 py-2.5 rounded-lg text-xs font-bold hover:bg-chem-600 transition shadow">
                                     제품 저장하기
+                                </button>
+                                <button onclick="previewAllProducts()" id="productPreviewAllBtn" class="admin-action-fit flex-shrink-0 bg-chem-700 text-white px-7 py-2.5 rounded-lg text-xs font-bold hover:bg-chem-800 transition shadow flex items-center" style="flex-shrink:0 !important; width:auto !important; min-width:0 !important; max-width:none !important; padding:10px 32px !important; white-space:nowrap !important;">
+                                    <i class="fa-solid fa-table-cells-large mr-1.5"></i> 전체상품 미리보기
                                 </button>
                             </div>
                         </div>
@@ -2817,6 +2839,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     <!-- ================= JavaScript 메인 로직 ================= -->
     <script>
         // 초기 기본 데이터 세팅
+        // Footer SNS 등록 항목 기본 아이콘 (원형 컬러 배지 SVG, 별도 이미지 파일 없이 인라인 데이터로 제공)
+        const FOOTER_SNS_DEFAULT_ICONS = {
+            youtube: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#FF0000"/><path d="M32 24l-12-7v14z" fill="#fff"/></svg>'),
+            facebook: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#1877F2"/><text x="24" y="33" font-family="Arial, sans-serif" font-size="26" font-weight="bold" fill="#fff" text-anchor="middle">f</text></svg>'),
+            instagram: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><defs><linearGradient id="ig" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f9ce34"/><stop offset="0.5" stop-color="#ee2a7b"/><stop offset="1" stop-color="#6228d7"/></linearGradient></defs><circle cx="24" cy="24" r="24" fill="url(#ig)"/><rect x="14" y="14" width="20" height="20" rx="6" fill="none" stroke="#fff" stroke-width="2.2"/><circle cx="24" cy="24" r="5.5" fill="none" stroke="#fff" stroke-width="2.2"/><circle cx="31" cy="17" r="1.6" fill="#fff"/></svg>'),
+            link: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#64748b"/><path d="M20 28l8-8M21 18h6a5 5 0 015 5v1M27 30h-6a5 5 0 01-5-5v-1" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>')
+        };
+
         const DEFAULT_DATA = {
             home: {
                 badge: "Since 2005 · Global Chemical Partner",
@@ -2928,6 +2958,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 { id: "fi_customer", icon: "📞", label: "고객센터 정보", value: "전화: 031-000-0000\n이메일: contact@kemtech.co.kr", visible: true, system: true },
                 { id: "fi_address", icon: "📍", label: "주소 정보", value: "경기도 화성시 화학공단길 20, 켐텍 R&D 센터", visible: true, system: true },
                 { id: "fi_cert", icon: "🏆", label: "인증 현황 정보", value: "ISO 9001 / ISO 14001 국제 품질·환경 경영 인증 보유", visible: true, system: true }
+            ],
+            footerSns: [
+                { id: "sns_youtube", icon: FOOTER_SNS_DEFAULT_ICONS.youtube, label: "유튜브", url: "https://www.youtube.com", visible: true },
+                { id: "sns_facebook", icon: FOOTER_SNS_DEFAULT_ICONS.facebook, label: "페이스북", url: "https://www.facebook.com", visible: true },
+                { id: "sns_instagram", icon: FOOTER_SNS_DEFAULT_ICONS.instagram, label: "인스타그램", url: "https://www.instagram.com", visible: true }
             ],
             inquiryFields: [
                 { id: "inqProduct", label: "관심 제품 선택", type: "select_product", required: true, width: "half", placeholder: "" },
@@ -4308,7 +4343,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             const footerItemsTabEl = document.getElementById('footerItemsTab');
             const footerInfoTabEl = document.getElementById('footerTab');
             if (footerItemsTabEl && !footerItemsTabEl.classList.contains('hidden')) collectFooterItemsAdmin();
-            if (footerInfoTabEl && !footerInfoTabEl.classList.contains('hidden')) applyFooterInfoValues(collectFooterInfoAdmin());
+            if (footerInfoTabEl && !footerInfoTabEl.classList.contains('hidden')) { applyFooterInfoValues(collectFooterInfoAdmin()); collectFooterSnsAdmin(); }
             const tabs = ['homeTab', 'aboutTab', 'productTab', 'facilityTab', 'inquiryFormTab', 'inquiryManageTab', 'footerItemsTab', 'footerTab', 'memberTab', 'historyTab', 'loginHistoryTab', 'gnbTab', 'colorTab'];
             tabs.forEach(t => {
                 const el = document.getElementById(t);
@@ -5169,6 +5204,139 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             resetProductForm();
             renderAdminProductTable();
             alert("제품 정보가 성공적으로 저장되었습니다.");
+        }
+
+        // 공개 홈페이지의 제품 카드와 동일한 스타일로, 관리자 "전체상품 미리보기"에서 사용할 카드 HTML을 생성
+        // 이 사이트에는 제품마다 수량 단계 개수가 다를 수 있는 '동적 수량 단계' 시스템이 별도로 적용되어 있어
+        // (관리자 화면의 productTierEditorGrid / 공개 카드의 patchPublicCards 로직 참고),
+        // 전체상품 미리보기도 고정 3단계가 아닌 실제 등록된 단계 수를 그대로 반영하도록 아래 보조 함수들을 둔다.
+        function getProductTiersForPreview(product) {
+            if (!product) return [];
+            const legacyify = (t, i) => {
+                t = t || {};
+                let range = String(t.range || "").trim();
+                let from = t.from != null ? String(t.from) : "";
+                let to = t.to != null ? String(t.to) : "";
+                if (!from && !to && range) {
+                    const parts = range.split(/\s*~\s*/);
+                    if (parts.length > 1) { from = parts[0].replace(/,/g,"").trim(); to = parts[1].replace(/개\s*이상|이상/g,"").replace(/,/g,"").trim(); }
+                    else if (/이상/.test(range)) { from = range.replace(/이상/g,"").replace(/개/g,"").replace(/,/g,"").trim(); }
+                    else { from = range.replace(/개/g,"").replace(/,/g,"").trim(); }
+                }
+                const names = ["소량","중량","대량","4단계"];
+                return { name: t.name || names[i] || `단계 ${i+1}`, from: from.replace(/,/g,""), to: to.replace(/,/g,""), unit: t.unit || "개", currency: t.currency || "원", price: t.price || "" };
+            };
+            if (product.pricing && Array.isArray(product.pricing.tiers) && product.pricing.tiers.length) {
+                return product.pricing.tiers.map((t,i) => legacyify(t,i));
+            }
+            return ["t1","t2","t3"].map(k => product.pricing && product.pricing[k]).filter(Boolean).map((t,i) => legacyify(t,i));
+        }
+        function formatTierRangeForPreview(t) {
+            if (!t) return "";
+            const unit = t.unit || "개";
+            const from = String(t.from || "").replace(/,/g,"").trim();
+            const to = String(t.to || "").replace(/,/g,"").trim();
+            const fFrom = from ? formatQtyThousands(from) : "";
+            const fTo = to ? formatQtyThousands(to) : "";
+            if (fFrom && fTo) return `${fFrom}${unit} ~ ${fTo} ${unit}`;
+            if (fFrom) return `${fFrom}${unit}이상`;
+            if (fTo) return `~ ${fTo}${unit}`;
+            return "";
+        }
+        function readProductTierEditorForPreview() {
+            const wrap = document.getElementById("productTierEditorGrid");
+            if (!wrap) return [];
+            return Array.from(wrap.querySelectorAll("[data-product-tier]")).map(card => {
+                const get = key => { const el = card.querySelector(`[data-tier-field="${key}"]`); return el ? String(el.value || "").trim() : ""; };
+                const from = get("from").replace(/,/g,"");
+                const to = get("to").replace(/,/g,"");
+                let range = "";
+                if (from && to) range = `${from} ~ ${to}`; else if (from) range = `${from} 이상`; else if (to) range = `~ ${to}`;
+                return { name: get("name"), from, to, unit: get("unit") || "개", currency: get("currency") || "원", price: get("price"), range };
+            });
+        }
+
+        function buildAdminProductCardPreviewHtml(prod) {
+            const esc = footerEscapeHtml;
+            const firstImg = (prod.images && prod.images.length > 0) ? prod.images[0] : SITE_IMAGE_FALLBACK;
+            const tiers = getProductTiersForPreview(prod);
+            const isDraft = !!prod.__draft;
+            const tiersHtml = tiers.length ? tiers.map((t, i) => `
+                <div class="flex justify-between items-center text-[11px] ${i < tiers.length - 1 ? 'text-slate-600 border-b border-sky-200/50 pb-1' : 'text-chem-600 font-bold'}">
+                    <span>${esc(t.name)} (${esc(formatTierRangeForPreview(t))})</span>
+                    <span class="${i === tiers.length - 1 ? 'text-xs sm:text-sm font-extrabold' : 'font-bold text-slate-800'}">${esc(t.price || '-')} ${esc(t.currency || '원')}</span>
+                </div>`).join("") : `<div class="text-slate-400 text-[11px]">등록된 수량 단계가 없습니다.</div>`;
+            return `<div class="bg-white rounded-2xl shadow-md border ${isDraft ? 'border-chem-600 ring-2 ring-chem-light' : 'border-slate-200'} overflow-hidden flex flex-col relative">
+                ${isDraft ? `<span class="absolute top-3 right-3 z-10 bg-chem-600 text-white text-[10px] font-extrabold px-2 py-1 rounded shadow">${esc(prod.__draftLabel || '신규 등록 중')}</span>` : ''}
+                <div class="relative h-44 sm:h-48 bg-slate-200 overflow-hidden">
+                    <img src="${esc(firstImg)}" alt="${esc(prod.title || '')}" class="w-full h-full object-cover">
+                    <span class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-extrabold px-2.5 py-1 rounded">${esc(prod.category || '분류 미입력')}</span>
+                    ${prod.images && prod.images.length > 1 ? `<span class="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded"><i class="fa-solid fa-images mr-1"></i>+${prod.images.length}</span>` : ''}
+                </div>
+                <div class="p-4 sm:p-6 flex-1 flex flex-col justify-between space-y-4">
+                    <div>
+                        <h3 class="font-extrabold text-slate-900 text-base sm:text-lg mb-2">${esc(prod.title || '제품명 미입력')}</h3>
+                        <p class="text-slate-600 text-xs line-clamp-2 leading-relaxed mb-4">${esc(prod.desc || '')}</p>
+                        <div class="bg-sky-50/70 border border-sky-100 rounded-xl p-3 space-y-1.5 text-xs">
+                            <div class="font-bold text-chem-900 text-[11px] mb-1 flex items-center"><i class="fa-solid fa-table-list text-chem-600 mr-1.5"></i> 수량별 표준 단가표</div>
+                            ${tiersHtml}
+                        </div>
+                    </div>
+                    <div class="pt-2 flex gap-2">
+                        <button type="button" disabled class="flex-1 bg-slate-100 text-slate-400 py-2.5 rounded-lg text-xs font-bold cursor-not-allowed"><i class="fa-solid fa-magnifying-glass mr-1"></i> 상세보기</button>
+                        <button type="button" disabled class="flex-1 bg-chem-light text-chem-600/70 py-2.5 rounded-lg text-xs font-bold cursor-not-allowed">견적 요청</button>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // "전체상품 미리보기": 이미 저장된 제품 + 현재 등록/수정 중인(미저장) 제품까지 모두 포함해
+        // 실제 홈페이지의 "제조 제품 소개 및 수량별 표준 단가" 섹션과 동일한 레이아웃으로 보여준다.
+        function previewAllProducts() {
+            const idxRaw = document.getElementById("editProductIndex")?.value;
+            const editIdx = (idxRaw !== undefined && idxRaw !== "") ? parseInt(idxRaw, 10) : -1;
+            const cat = document.getElementById("newProdCategory")?.value.trim() || "";
+            const title = document.getElementById("newProdTitle")?.value.trim() || "";
+            const desc = document.getElementById("newProdDesc")?.value.trim() || "";
+            const imgs = typeof getMultiImgValues === "function" ? getMultiImgValues("productImgContainer") : [];
+            const draftTiers = readProductTierEditorForPreview();
+            const hasDraftContent = !!(cat || title || desc || imgs.length || draftTiers.some(t => t.name || t.price || t.from || t.to));
+            const draftProduct = hasDraftContent ? {
+                __draft: true,
+                __draftLabel: editIdx >= 0 ? "수정 중" : "신규 등록 중",
+                category: cat, title, desc, images: imgs,
+                pricing: { tiers: draftTiers }
+            } : null;
+            const savedProducts = appData.products || [];
+            let allProducts;
+            if (draftProduct && editIdx >= 0 && editIdx < savedProducts.length) {
+                allProducts = savedProducts.map((p, i) => i === editIdx ? draftProduct : p);
+            } else if (draftProduct) {
+                allProducts = [...savedProducts, draftProduct];
+            } else {
+                allProducts = [...savedProducts];
+            }
+            const cardsHtml = allProducts.length
+                ? `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">${allProducts.map(p => buildAdminProductCardPreviewHtml(p)).join("")}</div>`
+                : `<p class="text-center text-slate-500 text-sm py-10">등록된 제품이 없습니다.</p>`;
+            const html = `<div>
+                <div class="text-center max-w-2xl mx-auto mb-6">
+                    <span class="text-chem-600 font-extrabold text-[9px] sm:text-xs tracking-widest uppercase bg-chem-light px-2.5 py-1 rounded">PRODUCTS & STANDARD PRICING</span>
+                    <h2 class="text-lg sm:text-2xl font-extrabold mt-3 mb-2 text-slate-900">제조 제품 소개 및 수량별 표준 단가</h2>
+                    <p class="text-slate-600 text-xs sm:text-sm">고순도 정밀 화학 제품 라인업과 수량별 구간 단가표입니다. 카드를 클릭하거나 상세보기를 통해 스펙을 확인하실 수 있습니다.</p>
+                </div>
+                ${cardsHtml}
+            </div>`;
+            const previewModal = document.getElementById("adminPreviewModal");
+            const previewContent = document.getElementById("previewModalContent");
+            const previewTitle = document.getElementById("previewModalTitle");
+            const confirmBtn = document.getElementById("previewConfirmBtn");
+            if (!previewModal || !previewContent) return;
+            if (previewTitle) previewTitle.innerHTML = '<i class="fa-solid fa-magnifying-glass text-chem-accent mr-2"></i> 전체상품 미리보기';
+            previewContent.innerHTML = html;
+            previewContent.querySelectorAll("img").forEach(applyImageFallback);
+            if (confirmBtn) confirmBtn.onclick = () => closePreviewModal();
+            previewModal.classList.remove("hidden");
         }
 
         function editProductItem(idx) {
@@ -6040,6 +6208,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             const cert = existing.get("fi_cert") || legacyByLabel("인증") || { id:"fi_cert", icon:"🏆", label:"인증 현황 정보", value:"ISO 9001 / ISO 14001 국제 품질·환경 경영 인증 보유", visible:true };
             [customer,address,cert].forEach(it => { it.system = true; });
             appData.footerItems = [customer,address,cert, ...appData.footerItems.filter(it => !["fi_customer","fi_address","fi_cert"].includes(it.id))];
+            if (!Array.isArray(appData.footerSns)) appData.footerSns = [];
         }
 
         function getFooterItemById(id) {
@@ -6081,6 +6250,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 const icon = getFooterManagedIcon(it.id, it.icon || "📌");
                 return `<div><h4 class="text-white font-bold mb-2 sm:mb-3 uppercase tracking-wider flex items-center gap-1.5">${footerIconMarkup(icon, "w-4 h-4")}<span>${it.label || ""}</span></h4><p class="flex flex-wrap items-center gap-1">${valueHtml}${mapLink}</p></div>`;
             }).join("");
+            renderPublicFooterSns();
+        }
+
+        // Footer 하단 SNS 아이콘 목록 렌더링: 등록된 SNS를 원형 아이콘으로 표시하고 클릭 시 새 탭으로 이동
+        function renderPublicFooterSns() {
+            const wrap = document.getElementById("footerSnsRow");
+            if (!wrap) return;
+            const items = (appData.footerSns || []).filter(it => it.visible !== false && String(it.url || "").trim());
+            wrap.innerHTML = items.map(it => `<a href="${footerEscapeHtml(it.url)}" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded-full overflow-hidden flex-none border border-white/10 hover:opacity-80 transition" title="${footerEscapeHtml(it.label || "SNS")}">${footerIconMarkup(it.icon || FOOTER_SNS_DEFAULT_ICONS.link, "w-full h-full")}</a>`).join("");
         }
 
         function renderFooterInfoAdmin() {
@@ -6128,7 +6306,20 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             const restFields = metas.filter(m => !pairTop.has(m.id) && footerFieldVisible(m));
             const topHtml = topFields.length ? `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">${topFields.map(buildField).join("")}</div>` : "";
             const restHtml = restFields.length ? `<div class="space-y-5">${restFields.map(buildField).join("")}</div>` : "";
-            root.innerHTML = topHtml + restHtml;
+            const snsList = appData.footerSns || [];
+            const snsHtml = snsList.length ? `<div class="mt-6 pt-5 border-t border-slate-200">
+                <h5 class="text-xs font-bold text-slate-700 mb-3">SNS 항목</h5>
+                <div class="space-y-2">
+                    ${snsList.map(sns => `<div class="flex items-center gap-2 sm:gap-3 border border-slate-200 rounded-lg px-3 py-2 bg-slate-50">
+                        <span class="w-8 h-8 rounded-full overflow-hidden flex-none border border-slate-200 bg-white flex items-center justify-center" title="${footerEscapeHtml(sns.label || 'SNS')}">${footerIconMarkup(sns.icon || FOOTER_SNS_DEFAULT_ICONS.link, "w-full h-full")}</span>
+                        <span class="text-[11px] font-bold text-slate-500 flex-none w-14 sm:w-16 truncate">${footerEscapeHtml(sns.label || 'SNS')}</span>
+                        <input type="text" data-footer-sns-field="url" data-footer-sns-id="${footerEscapeHtml(sns.id)}" value="${footerEscapeHtml(sns.url || '')}" placeholder="https://" class="flex-1 min-w-0 border rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none focus:border-chem-600" aria-label="${footerEscapeHtml(sns.label || 'SNS')} URL">
+                        ${sns.visible === false ? '<span class="text-[10px] font-bold text-slate-400 flex-none">감춤</span>' : ''}
+                    </div>`).join("")}
+                </div>
+                <p class="text-[10px] text-slate-400 mt-2">SNS 인터넷 주소(URL)는 이 화면에서 바로 수정할 수 있습니다. SNS 추가·삭제·순서 변경 및 아이콘/명칭 변경은 'Footer 항목관리' 화면에서 진행해 주세요.</p>
+            </div>` : "";
+            root.innerHTML = topHtml + restHtml + snsHtml;
         }
 
         function loadFooterAdminForm() {
@@ -6167,9 +6358,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             if (!skipConfirm && !confirm("푸터 내용을 등록/수정하시겠습니까?")) return;
             normalizeFooterStructure();
             applyFooterInfoValues(collectFooterInfoAdmin());
+            collectFooterSnsAdmin();
             saveData();
             renderFooterInfoAdmin();
             renderFooterItemsAdmin();
+            renderPublicFooterItems();
             alert("푸터 정보가 성공적으로 저장되었습니다.");
         }
 
@@ -6322,6 +6515,140 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             appData.footerIcons[id] = String(icon || "📌").trim() || "📌";
         }
 
+        // ===== Footer SNS 등록 항목 관리 (Footer 항목관리 화면의 별도 "SNS 등록" 섹션) =====
+        function handleFooterSnsIconFileChange(fileInput, id) {
+            const file = fileInput && fileInput.files && fileInput.files[0];
+            if (!file) return;
+            if (!file.type || file.type.indexOf("image/") !== 0) {
+                alert("이미지 파일만 업로드할 수 있습니다.");
+                fileInput.value = "";
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                alert("이미지 용량은 2MB 이하로 업로드해 주세요.");
+                fileInput.value = "";
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataUrl = String((e.target && e.target.result) || "");
+                if (!dataUrl) return;
+                const hidden = document.getElementById(`footerSnsIconValue_${id}`);
+                if (hidden) hidden.value = dataUrl;
+                const preview = document.getElementById(`footerSnsIconPreview_${id}`);
+                if (preview) preview.innerHTML = footerIconMarkup(dataUrl, "w-full h-full");
+            };
+            reader.onerror = function() { alert("이미지를 불러오지 못했습니다. 다시 시도해 주세요."); };
+            reader.readAsDataURL(file);
+            fileInput.value = "";
+        }
+
+        function addFooterSnsItem() {
+            normalizeFooterStructure();
+            if ((appData.footerSns || []).length >= 10) { alert("SNS 항목은 최대 10개까지 등록할 수 있습니다."); return; }
+            appData.footerSns.push({ id: `sns_${Date.now()}`, icon: FOOTER_SNS_DEFAULT_ICONS.link, label: "새 SNS", url: "", visible: true });
+            renderFooterItemsAdmin();
+        }
+
+        function removeFooterSnsItem(id) {
+            if (!confirm("이 SNS 항목을 삭제하시겠습니까?")) return;
+            appData.footerSns = (appData.footerSns || []).filter(it => it.id !== id);
+            renderFooterItemsAdmin();
+        }
+
+        function moveFooterSnsItem(id, dir) {
+            const list = appData.footerSns || [];
+            const idx = list.findIndex(it => it.id === id);
+            if (idx < 0) return;
+            const next = idx + dir;
+            if (next < 0 || next >= list.length) return;
+            [list[idx], list[next]] = [list[next], list[idx]];
+            renderFooterItemsAdmin();
+        }
+
+        // 화면에 입력 중인 SNS 값을 appData.footerSns에 즉시 반영 (저장 여부와 무관하게 미리보기/탭 전환에 최신 값이 쓰이도록)
+        function collectFooterSnsAdmin() {
+            const list = appData.footerSns || [];
+            // Footer 항목관리(footerItemsTab)와 Footer 정보편집(footerTab) 화면 모두 SNS 입력 필드를 가질 수 있어,
+            // 현재 화면에 보이지 않는(hidden) 탭 쪽의 오래된 DOM 값이 실제 입력값을 덮어쓰지 않도록 보이는 탭의 필드만 수집한다.
+            const isInHiddenFooterTab = (el) => {
+                const container = el.closest('#footerItemsTab, #footerTab');
+                return !!(container && container.classList.contains('hidden'));
+            };
+            document.querySelectorAll("[data-footer-sns-id]").forEach(el => {
+                if (isInHiddenFooterTab(el)) return;
+                const id = el.dataset.footerSnsId;
+                const item = list.find(it => it.id === id);
+                if (!item) return;
+                const field = el.dataset.footerSnsField;
+                if (field === "label") item.label = el.value.trim() || "SNS";
+                else if (field === "url") item.url = el.value.trim();
+                else if (field === "visible") item.visible = el.value !== "false";
+            });
+            document.querySelectorAll("[data-footer-sns-icon-id]").forEach(el => {
+                if (isInHiddenFooterTab(el)) return;
+                const id = el.dataset.footerSnsIconId;
+                const item = list.find(it => it.id === id);
+                if (!item) return;
+                item.icon = String(el.value || "").trim() || FOOTER_SNS_DEFAULT_ICONS.link;
+            });
+            return list;
+        }
+
+        function renderFooterSnsAdminHtml() {
+            const list = appData.footerSns || [];
+            const safe = (v) => String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+            const rows = list.map((sns) => {
+                const icon = sns.icon || FOOTER_SNS_DEFAULT_ICONS.link;
+                const visible = sns.visible !== false;
+                return `<div class="footer-admin-card bg-white border border-slate-200 rounded-xl p-3 sm:p-4" data-footer-sns-id="${safe(sns.id)}">
+                    <div class="footer-admin-grid grid grid-cols-1 md:grid gap-3">
+                        <div class="flex items-center gap-2 md:contents">
+                            <div class="flex-none footer-row-icon-col">
+                                <label class="md:hidden block text-[11px] font-bold text-slate-700 mb-1">아이콘</label>
+                                <div class="flex items-center gap-1.5">
+                                    <div id="footerSnsIconPreview_${safe(sns.id)}" class="w-9 h-9 rounded-full border border-slate-300 bg-slate-50 flex items-center justify-center text-base overflow-hidden cursor-pointer flex-none" onclick="document.getElementById('footerSnsIconFile_${safe(sns.id)}').click()" title="클릭하여 아이콘 이미지 업로드">${footerIconMarkup(icon, "w-full h-full")}</div>
+                                    <input type="hidden" id="footerSnsIconValue_${safe(sns.id)}" data-footer-sns-icon-id="${safe(sns.id)}" value="${safe(icon)}">
+                                    <input type="file" id="footerSnsIconFile_${safe(sns.id)}" accept="image/*" class="hidden" onchange="handleFooterSnsIconFileChange(this,'${safe(sns.id)}')">
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <label class="md:hidden block text-[11px] font-bold text-slate-700 mb-1">SNS 명</label>
+                                <input type="text" data-footer-sns-field="label" data-footer-sns-id="${safe(sns.id)}" value="${safe(sns.label)}" placeholder="예: 유튜브" class="border rounded-lg px-3 py-2 text-xs w-full" aria-label="SNS 명">
+                            </div>
+                        </div>
+                        <div class="min-w-0"><label class="md:hidden block text-[11px] font-bold text-slate-700 mb-1">URL</label>
+                            <input type="text" data-footer-sns-field="url" data-footer-sns-id="${safe(sns.id)}" value="${safe(sns.url)}" placeholder="https://" class="border rounded-lg px-3 py-2 text-xs w-full" aria-label="URL">
+                        </div>
+                        <div class="min-w-0"><label class="md:hidden block text-[11px] font-bold text-slate-700 mb-1">표시 여부</label>
+                            <select data-footer-sns-field="visible" data-footer-sns-id="${safe(sns.id)}" class="border rounded-lg px-3 py-2 text-xs bg-white w-full"><option value="true" ${visible ? "selected" : ""}>표시</option><option value="false" ${!visible ? "selected" : ""}>감추기</option></select>
+                        </div>
+                        <div class="min-w-0"><label class="md:hidden block text-[11px] font-bold text-slate-700 mb-1">이동 / 삭제</label>
+                            <div class="footer-action-group">
+                                <button type="button" onclick="moveFooterSnsItem('${safe(sns.id)}', -1)" class="footer-move-btn px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200">↑</button>
+                                <button type="button" onclick="moveFooterSnsItem('${safe(sns.id)}', 1)" class="footer-move-btn px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200">↓</button>
+                                <button type="button" onclick="removeFooterSnsItem('${safe(sns.id)}')" class="px-3 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-bold whitespace-nowrap">삭제</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join("");
+            return `<div class="mt-4 border-2 border-dashed border-slate-200 rounded-xl p-3 sm:p-4 bg-slate-50/60">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <h5 class="font-extrabold text-slate-800 text-sm flex items-center gap-1.5"><i class="fa-solid fa-share-nodes text-chem-600"></i> SNS 등록</h5>
+                    <button type="button" onclick="addFooterSnsItem()" class="admin-action-fit bg-chem-600 text-white px-3.5 py-2 rounded-lg text-xs font-bold hover:bg-chem-accent"><i class="fa-solid fa-plus mr-1"></i> SNS 추가</button>
+                </div>
+                <div class="space-y-3">${rows || `<p class="text-xs text-slate-400 px-1">등록된 SNS가 없습니다. 'SNS 추가' 버튼으로 새 SNS를 등록하세요.</p>`}</div>
+            </div>`;
+        }
+
+        // 미리보기 팝업에서 재사용하는 SNS 아이콘 줄 (표시 항목 + URL이 입력된 항목만, 새 탭 링크)
+        function buildFooterSnsPreviewRowHtml() {
+            const items = (appData.footerSns || []).filter(it => it.visible !== false && String(it.url || "").trim());
+            if (!items.length) return "";
+            return `<div class="flex items-center flex-wrap gap-2 mt-3">${items.map(it => `<a href="${footerEscapeHtml(it.url)}" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded-full overflow-hidden flex-none border border-white/10 hover:opacity-80 transition" title="${footerEscapeHtml(it.label || "SNS")}">${footerIconMarkup(it.icon || FOOTER_SNS_DEFAULT_ICONS.link, "w-full h-full")}</a>`).join("")}</div>`;
+        }
+
         function renderFooterItemsAdmin() {
             const list = document.getElementById("footerItemsAdminList");
             if (!list) return;
@@ -6370,14 +6697,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 </div>`;
                 return `<div class="footer-admin-card bg-white border border-slate-200 rounded-xl p-3 sm:p-4" data-footer-item-index="${idx}" data-footer-item-id="${safe(it.id)}">
                     <div class="footer-admin-grid grid grid-cols-1 md:grid gap-3">
-                        <div class="min-w-0"><label class="md:hidden block text-[11px] font-bold text-slate-700 mb-1">아이콘</label>${iconCell}</div>
-                        <div class="min-w-0"><label class="md:hidden block text-[11px] font-bold text-slate-700 mb-1">항목 제목</label>${titleField}</div>
+                        <div class="flex items-center gap-2 md:contents">
+                            <div class="flex-none footer-row-icon-col min-w-0"><label class="md:hidden block text-[11px] font-bold text-slate-700 mb-1">아이콘</label>${iconCell}</div>
+                            <div class="flex-1 min-w-0"><label class="md:hidden block text-[11px] font-bold text-slate-700 mb-1">항목 제목</label>${titleField}</div>
+                        </div>
                         <div class="min-w-0"><label class="md:hidden block text-[11px] font-bold text-slate-700 mb-1">내용</label>${contentField}</div>
                         <div class="min-w-0"><label class="md:hidden block text-[11px] font-bold text-slate-700 mb-1">표시 여부</label>${visibility}</div>
                         <div class="min-w-0"><label class="md:hidden block text-[11px] font-bold text-slate-700 mb-1">이동 / 삭제</label><div class="footer-action-group"><button type="button" ${moveDisabled} onclick="moveFooterItemById('${safe(it.id)}', -1)" class="footer-move-btn px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold ${moveClass}">↑</button><button type="button" ${moveDisabled} onclick="moveFooterItemById('${safe(it.id)}', 1)" class="footer-move-btn px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold ${moveClass}">↓</button>${remove}</div></div>
                     </div>
                 </div>`;
-            }).join("");
+            }).join("") + renderFooterSnsAdminHtml();
         }
 
         function collectFooterItemsAdmin() {
@@ -6418,6 +6747,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 if (field === "label") item.label = el.value.trim() || "추가 항목";
                 if (field === "value") item.value = el.value || "";
             });
+            collectFooterSnsAdmin();
             return managed;
         }
 
@@ -6468,25 +6798,47 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             </div>`;
         }
 
+        // appData.footer(브랜드명/설명/아이콘/저작권) 값을 실제 공개 Footer의 브랜드 영역 DOM에 즉시 반영한다.
+        // (저장 여부와 무관하게 현재 입력값을 기준으로 실제 Footer와 동일한 모습을 만들기 위한 용도)
+        function syncLiveFooterBrandDom() {
+            if (!appData.footer) return;
+            const brandIconEl = document.getElementById("footerBrandIcon");
+            const brandWrapEl = document.getElementById("footerDefaultBrandWrap");
+            const brandIconVal = appData.footer.brandIcon || "🧪";
+            if (brandIconEl) {
+                if (footerIconIsImage(brandIconVal)) {
+                    brandIconEl.innerHTML = `<img src="${footerEscapeHtml(brandIconVal)}" alt="" class="h-9 w-auto max-w-[160px] object-contain">`;
+                    brandIconEl.className = "";
+                    if (brandWrapEl) brandWrapEl.classList.add("items-start");
+                } else {
+                    brandIconEl.textContent = brandIconVal;
+                    brandIconEl.className = "text-lg";
+                    if (brandWrapEl) brandWrapEl.classList.remove("items-start");
+                }
+            }
+            const nameEl = document.getElementById("footerBrandName");
+            if (nameEl) nameEl.textContent = appData.footer.brandName || "KEMTECH";
+            const descEl = document.getElementById("footerBrandDesc");
+            if (descEl) descEl.textContent = appData.footer.brandDesc || "";
+            const copyEl = document.getElementById("footerCopyright");
+            if (copyEl) copyEl.textContent = appData.footer.copyright || "";
+        }
+
+        // 실제 공개 Footer(DOM)를 현재 appData 기준으로 최신화한 뒤 그대로 복제하여 미리보기 팝업용 HTML을 만든다.
+        // 이렇게 하면 미리보기 팝업의 내용이 항상 실제 홈페이지 Footer와 동일하게 유지된다. (id는 중복 방지를 위해 제거)
+        function buildLiveFooterPreviewHtml() {
+            syncLiveFooterBrandDom();
+            renderPublicFooterItems();
+            const liveFooterEl = document.querySelector("footer");
+            if (!liveFooterEl) return "";
+            const clonedHtml = liveFooterEl.outerHTML.replace(/\sid="[^"]*"/g, "");
+            return `<div class="rounded-xl overflow-hidden -m-4 sm:-m-6">${clonedHtml}</div>`;
+        }
+
         function previewFooterItems() {
             collectFooterItemsAdmin();
             normalizeFooterStructure();
-            const brandNameMeta = FOOTER_SYSTEM_ITEMS.find(m => m.id === "fi_brandName");
-            const brandDescMeta = FOOTER_SYSTEM_ITEMS.find(m => m.id === "fi_brandDesc");
-            const brandIconMeta = FOOTER_SYSTEM_ITEMS.find(m => m.id === "fi_brandIcon");
-            const copyrightMeta = FOOTER_SYSTEM_ITEMS.find(m => m.id === "fi_copyright");
-            const escape = (v) => String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-            const gridItems = [
-                ...FOOTER_SYSTEM_ITEMS.filter(meta => meta.kind === "item" && footerFieldVisible(meta)).map(meta => ({ icon: getFooterManagedIcon(meta.id, meta.icon), label: meta.label, value: footerFieldValue(meta) })),
-                ...(appData.footerItems || []).filter(it => !FOOTER_SYSTEM_ITEMS.some(meta => meta.id === it.id) && it.visible !== false).map(it => ({ icon: getFooterManagedIcon(it.id, it.icon || "📌"), label: it.label || "추가 항목", value: it.value || "" }))
-            ];
-            const brandVisible = footerFieldVisible(brandNameMeta) || footerFieldVisible(brandDescMeta);
-            const brandIcon = getFooterManagedIcon("fi_brandIcon", footerFieldValue(brandIconMeta));
-            const brandHtml = brandVisible ? `<div class="mb-5 pb-4 border-b border-slate-800">${buildFooterBrandPreviewHtml(brandIcon, footerFieldValue(brandNameMeta), footerFieldValue(brandDescMeta))}</div>` : "";
-            const gridHtml = gridItems.length ? `<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-${Math.max(1, Math.min(gridItems.length,4))} gap-4">${gridItems.map(it => `<div><span class="text-white font-bold mb-1 flex items-center gap-1.5">${footerIconMarkup(it.icon, "w-4 h-4")}<span>${escape(it.label)}</span></span><p>${escape(it.value).replace(/\n/g,"<br>")}</p></div>`).join("")}</div>` : `<p class="text-slate-500">표시할 항목이 없습니다.</p>`;
-            const copyrightVisible = footerFieldVisible(copyrightMeta);
-            const copyrightHtml = copyrightVisible ? `<div class="mt-5 pt-4 border-t border-slate-800 text-slate-500 text-[11px]">${escape(footerFieldValue(copyrightMeta))}</div>` : "";
-            const html = `<div class="bg-slate-950 text-slate-400 p-6 rounded-xl text-xs">${brandHtml}${gridHtml}${copyrightHtml}</div>`;
+            const html = buildLiveFooterPreviewHtml();
             const previewModal = document.getElementById("adminPreviewModal");
             const previewContent = document.getElementById("previewModalContent");
             const previewTitle = document.getElementById("previewModalTitle");
@@ -6494,6 +6846,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             if (!previewModal || !previewContent) return;
             if (previewTitle) previewTitle.innerHTML = '<i class="fa-solid fa-magnifying-glass text-chem-accent mr-2"></i> Footer 항목관리 미리보기';
             previewContent.innerHTML = html;
+            previewContent.querySelectorAll("img").forEach(applyImageFallback);
             if (confirmBtn) confirmBtn.onclick = () => { saveFooterItems(true); closePreviewModal(); };
             previewModal.classList.remove("hidden");
         }
@@ -6544,14 +6897,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             }
             return `
                 <div class="mt-4">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="font-bold text-xs text-slate-800"><i class="fa-solid fa-images text-chem-600 mr-1"></i>${label} (${validImages.length}개)</h4>
-                        <span class="text-[10px] text-slate-400">좌우로 스크롤하여 확인</span>
-                    </div>
-                    <div class="preview-image-scroll flex gap-3 pb-2 snap-x" style="display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:scroll;overflow-y:hidden;width:100%;min-width:0;max-width:100%;scrollbar-width:thin;-webkit-overflow-scrolling:touch;">
+                    <h4 class="font-bold text-xs text-slate-800 mb-2"><i class="fa-solid fa-images text-chem-600 mr-1"></i>${label} (${validImages.length}개)</h4>
+                    <div class="space-y-3 w-full">
                         ${validImages.map((url, i) => `
-                            <div class="preview-image-card flex-none w-64 sm:w-72 border border-slate-200 rounded-xl bg-white p-2 snap-start shadow-sm" style="flex:0 0 18rem;min-width:18rem;max-width:18rem;">
-                                <img src="${url}" alt="${label} ${i+1}" class="w-full h-36 sm:h-40 object-cover rounded-lg bg-slate-100">
+                            <div class="preview-stack-card w-full max-w-full border border-slate-200 rounded-xl bg-white p-2 shadow-sm box-border">
+                                <img src="${url}" alt="${label} ${i+1}" class="block w-full max-w-full h-44 sm:h-56 object-cover rounded-lg bg-slate-100">
                                 <div class="mt-2 text-[10px] text-slate-500 truncate" title="${url}">이미지 ${i+1} · ${url}</div>
                             </div>
                         `).join('')}
@@ -6564,6 +6914,22 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             const previewContent = document.getElementById("previewModalContent");
             const confirmBtn = document.getElementById("previewConfirmBtn");
             if (!previewModal || !previewContent) return;
+
+            // 각 관리 화면의 실제 메뉴 명칭을 기준으로 미리보기 팝업 타이틀을 지정 (모든 팝업이 "전체상품 미리보기"로
+            // 동일하게 보이던 문제를 막기 위해 매번 호출 시점에 올바른 제목으로 다시 지정한다)
+            const previewTitleEl = document.getElementById("previewModalTitle");
+            const PREVIEW_TITLE_BY_TAB = {
+                homeTab: "홈 미리보기",
+                aboutTab: "회사소개 미리보기",
+                productTab: "제품소개 미리보기",
+                facilityHeaderTab: "생산 및 안전 소개 미리보기",
+                facilityTab: "생산 및 안전 미리보기",
+                inquiryFormTab: "견적요청 양식 미리보기",
+                footerTab: "Footer 정보편집 미리보기"
+            };
+            if (previewTitleEl && PREVIEW_TITLE_BY_TAB[tabType]) {
+                previewTitleEl.innerHTML = `<i class="fa-solid fa-magnifying-glass text-chem-accent mr-2"></i> ${PREVIEW_TITLE_BY_TAB[tabType]}`;
+            }
 
             let html = "";
             let confirmAction = null;
@@ -6702,21 +7068,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 confirmAction = () => { saveInquiryFieldsSettings(true); closePreviewModal(); };
             }
             else if (tabType === 'footerTab') {
-                const footerValues = collectFooterInfoAdmin();
-                const name = footerValues.fi_brandName || "";
-                const desc = footerValues.fi_brandDesc || "";
-                const icon = footerValues.fi_brandIcon || "🧪";
-                const copy = footerValues.fi_copyright || "";
-                const footerItemsPreview = (appData.footerItems || []).filter(it => it.visible !== false).map(it => {
-                    const liveValue = Object.prototype.hasOwnProperty.call(footerValues, it.id) ? footerValues[it.id] : (it.value || "");
-                    return `<div><span class="text-white font-bold mb-1 flex items-center gap-1.5">${footerIconMarkup(it.icon, "w-4 h-4")}<span>${it.label || ""}</span></span><p>${String(liveValue || "").replace(/\n/g,"<br>")}</p></div>`;
-                }).join("");
-                html = `
-                    <div class="bg-slate-950 text-slate-400 p-6 rounded-xl text-xs space-y-4">
-                        ${buildFooterBrandPreviewHtml(icon, name, desc)}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-800 pt-4">${footerItemsPreview}</div>
-                        <div class="border-t border-slate-800 pt-3 text-center text-slate-500"><p>${copy}</p></div>
-                    </div>`;
+                normalizeFooterStructure();
+                applyFooterInfoValues(collectFooterInfoAdmin());
+                collectFooterSnsAdmin();
+                html = buildLiveFooterPreviewHtml();
                 confirmAction = () => { saveFooterSettings(true); closePreviewModal(); };
             }
 
@@ -8283,6 +8638,8 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
         const previewContent = document.getElementById('previewModalContent');
         const confirmBtn = document.getElementById('previewConfirmBtn');
         if(!previewModal || !previewContent || !confirmBtn) return;
+        const previewTitleEl = document.getElementById('previewModalTitle');
+        if (previewTitleEl) previewTitleEl.innerHTML = '<i class="fa-solid fa-magnifying-glass text-chem-accent mr-2"></i> 제품소개 미리보기';
         const cat = document.getElementById('newProdCategory').value;
         const title = document.getElementById('newProdTitle').value;
         const desc = document.getElementById('newProdDesc').value;
