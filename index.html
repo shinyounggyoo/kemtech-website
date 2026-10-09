@@ -2989,7 +2989,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             ],
             inquiries: [],
             adminUsers: [
-                { id: "admin", name: "관리자", role: "관리자", email: "admin@kemtech.co.kr", password: "1234", createdAt: "기본 계정" }
+                { id: "admin", name: "관리자", role: "관리자", email: "shinyounggyoo@gmail.com", password: "1234$", createdAt: "기본 계정" }
             ],
             history: [],
             loginHistory: [],
@@ -3020,7 +3020,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
                 if (!Array.isArray(appData.adminUsers) || !appData.adminUsers.length) appData.adminUsers = DEFAULT_DATA.adminUsers.map(u => ({...u}));
                 appData.adminUsers.forEach(u => {
                     if (typeof u.email !== "string") u.email = "";
-                    if (u.id === "admin" && !u.email.trim()) u.email = "admin@kemtech.co.kr";
+                    if (u.id === "admin" && !u.email.trim()) u.email = "shinyounggyoo@gmail.com";
                 });
                 try { localStorage.setItem("kemtech_app_db", JSON.stringify(appData)); } catch(_e) {}
                 if (!Array.isArray(appData.history)) appData.history = [];
@@ -6009,7 +6009,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             document.getElementById('newMemberId').readOnly = true;
             document.getElementById('newMemberId').classList.add('bg-slate-100');
             document.getElementById('newMemberRole').value = u.role || '관리자';
-            document.getElementById('newMemberEmail').value = (u.id === 'admin' && !(u.email || '').trim()) ? 'admin@kemtech.co.kr' : (u.email || '');
+            document.getElementById('newMemberEmail').value = (u.id === 'admin' && !(u.email || '').trim()) ? 'shinyounggyoo@gmail.com' : (u.email || '');
             document.getElementById('newMemberPw').value = '';
             document.getElementById('memberSubmitBtn').textContent = '회원 정보 수정';
             document.getElementById('memberCancelBtn').classList.remove('hidden');
@@ -6314,7 +6314,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             { id: "fi_brandName", icon: "🏷️", label: "브랜드/회사명", kind: "brandName", defaultValue: "KEMTECH" },
             { id: "fi_brandDesc", icon: "📝", label: "브랜드 한줄 설명", kind: "brandDesc", defaultValue: "글로벌 첨단 화학 소재 및 정밀 화학 제품 제조 리더" },
             { id: "fi_brandIcon", icon: "🧪", label: "브랜드 아이콘(이모지)", kind: "brandIcon", defaultValue: "🧪" },
-            { id: "fi_customer", icon: "📞", label: "고객센터 정보", kind: "item", defaultValue: "전화: 031-000-0000\n이메일: contact@kemtech.co.kr" },
+            { id: "fi_customer", icon: "📞", label: "고객센터 정보", kind: "item", defaultValue: "전화: 031-000-0000\n이메일: shinyounggyoo@gmail.com" },
             { id: "fi_address", icon: "📍", label: "주소 정보", kind: "item", defaultValue: "경기도 화성시 화학공단길 20, 켐텍 R&D 센터" },
             { id: "fi_cert", icon: "🏆", label: "인증 현황 정보", kind: "item", defaultValue: "ISO 9001 / ISO 14001 국제 품질·환경 경영 인증 보유" },
             { id: "fi_copyright", icon: "©️", label: "저작권(Copyright) 문구", kind: "copyright", defaultValue: "© 2005-2026 KEMTECH CO., LTD. All Rights Reserved." }
@@ -6340,7 +6340,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             if (!Array.isArray(appData.footerItems)) appData.footerItems = [];
             const existing = new Map(appData.footerItems.map(it => [it.id, it]));
             const legacyByLabel = label => appData.footerItems.find(it => String(it.label || "").includes(label));
-            const customer = existing.get("fi_customer") || legacyByLabel("고객") || { id:"fi_customer", icon:"📞", label:"고객센터 정보", value:"전화: 031-000-0000\n이메일: contact@kemtech.co.kr", visible:true };
+            const customer = existing.get("fi_customer") || legacyByLabel("고객") || { id:"fi_customer", icon:"📞", label:"고객센터 정보", value:"전화: 031-000-0000\n이메일: shinyounggyoo@gmail.com", visible:true };
             const address = existing.get("fi_address") || legacyByLabel("주소") || { id:"fi_address", icon:"📍", label:"주소 정보", value:"경기도 화성시 화학공단길 20, 켐텍 R&D 센터", visible:true };
             const cert = existing.get("fi_cert") || legacyByLabel("인증") || { id:"fi_cert", icon:"🏆", label:"인증 현황 정보", value:"ISO 9001 / ISO 14001 국제 품질·환경 경영 인증 보유", visible:true };
             [customer,address,cert].forEach(it => { it.system = true; });
